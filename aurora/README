@@ -1,0 +1,96 @@
+
+===========================
+Input parameters:
+===========================
+
+Aurora loads the input parameters sequentially, and checks for self
+consistency among them. Note that this may push aurora to ignore some
+values from the ConfigFile and/or to set them by itself.
+
+The highest hierarchy parameter is redshift, and in general those
+quantities expressed in physical units are given priority.
+
+For example, if a given pixsize in kpc is provided Aurora will compute
+the corresponding spatial_sampl in arcsec as a function of the angular
+distance, d_theta.
+Yet if no pixsize was passed in the ConfigFile, Aurora will try to
+determine it in the inverse way, i.e., using the value of spatial_sampl.
+
+The nested algorithm to define the value to use for each parameter is
+presented below. Exact constants and unit information is ommited in
+this summary.
+
+===========================================
+Case 1: If a redshift was specified.
+===========================================
+
+redshift ?	
+		yes: lambda_em, d_theta, and dl are determined from Cosmology
+		not: load lambda_em, d_theta, or set them to NaN if they are missing
+			 load dl, or set it to 1/sqrt{4.pi} if it is missing
+
+pixsize ?
+		yes: sets spatial_sampl = pixsize/d_theta
+		not:
+			spatial_sampl ?
+					yes: sets pixsize
+					not: Both parameters are set to NaN
+
+spatial_res_kpc ?
+		yes: sets spatial_res = spatial_res_kpc/d_theta
+        not: 
+			spatial_res ?
+					yes: sets spatial_res_kpc
+					not: Both parameters are set to NaN
+
+fieldofview ?
+		yes: set FoV_arcsec = fieldofview/d_theta
+			 set spatial_dim = fieldofview/spatial_sampl
+		not:
+			FoV_arcsec ?
+					yes: set fieldofview and spatial_dim
+					not:
+						spatial_dim ?
+								yes: set fieldofview and FoV_arcsec
+								not: The three parameters are set to NaN
+
+spectral_res?
+		yes: no dependencies associated
+		not:
+			it is set to NaN
+
+velocity_sampl ?
+		yes: set spectral_sampl = lambda_em*velocity_sampl/c
+		not:
+			spectral_sampl ?
+					yes: sets velocity_sampl
+					not: Both parameters are set to NaN
+
+velocity_range ?
+		yes: set spectral_range = lambda_em * velocity_range/c
+			 set spectral_dim = velocity_range/velocity_sampl
+		not:
+			spectral_range ?
+					yes: set velocity_range and spectral_dim
+					not: 
+						spectral_dim ?
+								yes: set velocity_range and spectral_range
+								not: The three parameters are set to NaN
+
+
+When all the parameters in a given set of 2 or 3 entangled elements are
+missing, Aurora set them to NaN and raise a warning message, not trying
+to find out their values from other informations.
+
+Depending on what you are doing this will
+likely cause termination or unexpected results, so, make sure that you
+are feeding Aurora what it needs for your specific purpose.
+
+The only default value which does not go to NaN is dl = 1/sqrt{4.pi}.
+This means that Aurora will compute the total intrinsic luminosities
+instead of the incoming flux at Earth, as Flux = Lum. / (4.pi.dl^2).
+
+
+
+
+
