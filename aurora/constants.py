@@ -32,7 +32,7 @@ kpc = const.kpc.to('cm')
 G = const.G.to('cm3/(g s2)')
 # Factor to go from FWHM to std dev
 fwhm_sigma = (2.0 * math.sqrt(2.0 * math.log(2.0)))
-  ## --------- ##
+## --------- ##
 
 # FOR FUTURE REFERENCES / IMPLEMENTATIONS ??
 # Obscuration coefficient for important emission lines
@@ -53,6 +53,3 @@ kMW_SII_6716 = 2.444
 kMW_SII_6731 = 2.437
 kMW_Pb = 0.832
 kMW_Pa = 0.451
-
-
-

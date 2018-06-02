@@ -46,6 +46,7 @@ from . import gasProps_sBird as bird
 
 warnings.filterwarnings("ignore")
 
+
 def update_progress(progress):
     """
     Print a progress bar during the creation of the mock data.
@@ -74,15 +75,16 @@ def update_progress(progress):
     sys.stdout.write(text)
     sys.stdout.flush()
 
+
 def __aurora_version():
     """
     Print the version of Aurora being used for future references.
     """
-    print ('   ___               ')
-    print ('  / _ |__ _________  _______ _   ')
-    print (' / __ / // / __/ _ \/ __/ _ `/   ')
-    print ('/_/ |_\___/_/  \___/_/  \___/    ')
-    print ('////// Version 2.1')
+    print('   ___               ')
+    print('  / _ |__ _________  _______ _   ')
+    print(' / __ / // / __/ _ \/ __/ _ `/   ')
+    print('/_/ |_\___/_/  \___/_/  \___/    ')
+    print('////// Version 2.1')
 
 
 def spectrom_mock(ConfigFile):
@@ -106,7 +108,7 @@ def spectrom_mock(ConfigFile):
     geom, run, spectrom = config.get_allinput(ConfigFile)
     cube_side, n_ch = spectrom.cube_dims()
     data = snap.read_snap(run.input_file)
-    data_gas = snap.set_snapshots_ready(geom,run,data)[0]
+    data_gas = snap.set_snapshots_ready(geom, run, data)[0]
     del data
     gc.collect()
 
@@ -116,7 +118,7 @@ def spectrom_mock(ConfigFile):
     # > Increase target resolution to minimize geometrical concerns
     # > Compute the fluxes separately for each AMR scale
     # > Smooth the fluxes from each scale and collapse them
-    snap.set_hsml_limits(run,data_gas)
+    snap.set_hsml_limits(run, data_gas)
     spectrom.oversample()
     cube = spec.__project_all_chunks(geom, run, spectrom, data_gas)
     spec.__cube_convolution(geom, run, spectrom, cube)
@@ -128,17 +130,18 @@ def spectrom_mock(ConfigFile):
     # > Inject noise
     # > Store the final datacube
 
-    cube = arr.bin_array(cube,spectrom.oversampling,axis=1,normalized=True)
-    cube = arr.bin_array(cube,spectrom.oversampling,axis=2,normalized=True)
+    cube = arr.bin_array(cube, spectrom.oversampling, axis=1, normalized=True)
+    cube = arr.bin_array(cube, spectrom.oversampling, axis=2, normalized=True)
     spectrom.undersample()
 
     if(spectrom.sigma_cont > 0.):
-        print ('// Noise injection')
-        cube_noise = cube + np.random.normal(0.0, spectrom.sigma_cont, cube.shape)
+        print('// Noise injection')
+        cube_noise = cube + \
+            np.random.normal(0.0, spectrom.sigma_cont, cube.shape)
 
     cube = np.float32(cube)
-    print (run.output_name)
-    so.writing_datacube(geom,spectrom,run,cube)
+    print(run.output_name)
+    so.writing_datacube(geom, spectrom, run, cube)
 
 
 def degrade_mastercube(ConfigFile):
@@ -165,9 +168,9 @@ def degrade_mastercube(ConfigFile):
     m.get_attr()
 
     psf_fwhm = spectrom.spatial_res_kpc / m.pixsize.to('kpc')
-    spec.__spatial_convolution(m.cube,psf_fwhm)
+    spec.__spatial_convolution(m.cube, psf_fwhm)
     psf_fwhm = ct.c.to('km s-1') / spectrom.spectral_res / m.velocity_sampl
-    spec.__spectral_convolution(m.cube,psf_fwhm)
+    spec.__spectral_convolution(m.cube, psf_fwhm)
 
     m.spatial_degrade(geom, spectrom)
     m.spectral_degrade(geom, spectrom)
@@ -180,7 +183,7 @@ def degrade_mastercube(ConfigFile):
     run.reference_id = m.header['SNAP_REF']
     spectrom.redshift_ref = m.header['Z_REF']
 
-    so.writing_datacube(geom,spectrom,run,m.cube)
+    so.writing_datacube(geom, spectrom, run, m.cube)
 
     # NOTE: If I want to degrade several without reading again over the
     # object m, for each configuration I can create a new object, and
