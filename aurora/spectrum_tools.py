@@ -1,3 +1,4 @@
+import os
 import gc
 import sys
 import math
@@ -8,6 +9,9 @@ from scipy import interpolate
 from astropy import constants as const
 from scipy.signal import fftconvolve
 from bisect import bisect_left
+
+from joblib import Parallel, delayed
+import multiprocessing
 
 from . import aurora as au
 from . import snapshot_tools as snap
@@ -66,21 +70,47 @@ def __project_all_chunks(geom, run, spectrom, data_gas):
     # > Define the number of chunks
     # > Project and add the fluxes iteratively
     cube_side, n_ch = spectrom.cube_dims()
-    cube = np.float32(np.zeros((n_ch, cube_side, cube_side, run.nfft)))
+
+    # Check we have enough RAM to run this process.
     nchunk = int(math.ceil(len(data_gas) / float(run.nvector)))
-    au.update_progress(0.0)
-    sys.stdout.flush()
-    for i in range(nchunk):
-        start = i * run.nvector
-        stop = start + min(run.nvector, len(data_gas) - start)
-        __project_spectrom_flux(geom, run, spectrom,
-                                data_gas, start, stop, cube)
-        au.update_progress(float(i + 1) / nchunk)
-        sys.stdout.flush()
-    return cube
+    num_cores = run.ncpu
+
+    cube_size = np.zeros((n_ch, cube_side, cube_side, run.nfft)).nbytes
+    memory_needed_1core = int((cube_size/1e6))
+    memory_needed_ncores = int((cube_size/1e6) * min(num_cores, nchunk))
+    memory_available = int(os.popen("free -m").readlines()[1].split()[-1])
+
+    if memory_available < memory_needed_ncores:
+        print('Warning: Not enough RAM left in your device for this operation in parallel.')
+        print(
+            f'Warning: Needed {memory_needed_ncores}Mb, you have {memory_available}Mb Free.')
+        print('Using a single cpu...')
+        if memory_available < memory_needed_1core:
+            raise MemoryError(
+                f'Not enough RAM in your device.\nMin needed is {memory_needed_1core}Mb')
+        else:
+            if abs(memory_available-memory_needed_1core) < 1000:
+                print(
+                    'Warning: Your computer may be slow during this operation, be patient.')
+            cube = np.zeros((n_ch, cube_side, cube_side, run.nfft))
+            au.update_progress(0.0)
+            sys.stdout.flush()
+            for i in range(nchunk):
+                start = i * run.nvector
+                stop = start + min(run.nvector, len(data_gas) - start)
+                __project_spectrom_flux(
+                    geom, run, spectrom, data_gas, start, stop, cube)
+                au.update_progress(float(i + 1) / nchunk)
+                sys.stdout.flush()
+            return cube
+    else:
+        cube_list = Parallel(n_jobs=1)(delayed(__project_spectrom_flux)
+                                       (geom, run, spectrom, data_gas, i) for i in range(nchunk))
+
+        return sum(cube_list)
 
 
-def __project_spectrom_flux(geom, run, spectrom, data_gas, start, stop, cube):
+def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     """
     Compute the H-alpha emission of a bunch of particles and project it
     to a 4D grid, keeping contributions from different scales separated
@@ -88,8 +118,15 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, start, stop, cube):
     Parameters
     ----------
     """
-
     cube_side, n_ch = spectrom.cube_dims()
+    if len(args) == 1:
+        i = args[0]
+        start = i * run.nvector
+        stop = start + min(run.nvector, len(data_gas) - start)
+        cube = np.float32(np.zeros((n_ch, cube_side, cube_side, run.nfft)))
+    else:
+        start, stop, cube = args
+
     # Define the main constants in the right system of units to make it simpler
     # (some operations with sliced vectors were giving the wrong units)
     kpc = const.kpc.to('cm').value
@@ -230,6 +267,8 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, start, stop, cube):
         # Insert the line fluxes in the right positions at the right scale
         cube[:, y[ok_level[unique_ind]], x[ok_level[unique_ind]],
              i] += np.float32(np.transpose(line))
+
+    return cube
 
 
 def __cube_convolution(geom, run, spectrom, cube):
