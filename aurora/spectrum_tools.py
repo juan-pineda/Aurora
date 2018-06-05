@@ -69,45 +69,60 @@ def __project_all_chunks(geom, run, spectrom, data_gas):
     # > Creates the 4D output array
     # > Define the number of chunks
     # > Project and add the fluxes iteratively
-    cube_side, n_ch = spectrom.cube_dims()
 
-    # Check we have enough RAM to run this process.
     nchunk = int(math.ceil(len(data_gas) / float(run.nvector)))
-    num_cores = run.ncpu
 
+    if run.ncpu > 1:
+        return get_cube_in_parallel(geom, run, spectrom, data_gas, nchunk)
+    else:
+        return get_cube_in_sequential(geom, run, spectrom, data_gas, nchunk)
+
+
+def get_cube_in_parallel(geom, run, spectrom, data_gas, nchunk):
+    """
+    """
+    cube_side, n_ch = spectrom.cube_dims()
     cube_size = np.zeros((n_ch, cube_side, cube_side, run.nfft)).nbytes
-    memory_needed_1core = int((cube_size/1e6))
-    memory_needed_ncores = int((cube_size/1e6) * min(num_cores, nchunk))
+    memory_needed_ncores = int((cube_size/1e6) * min(run.ncpu, nchunk))
     memory_available = int(os.popen("free -m").readlines()[1].split()[-1])
 
-    if memory_available < memory_needed_ncores:
-        print('Warning: Not enough RAM left in your device for this operation in parallel.')
-        print(
-            f'Warning: Needed {memory_needed_ncores}Mb, you have {memory_available}Mb Free.')
-        print('Using a single cpu...')
-        if memory_available < memory_needed_1core:
-            raise MemoryError(
-                f'Not enough RAM in your device.\nMin needed is {memory_needed_1core}Mb')
-        else:
-            if abs(memory_available-memory_needed_1core) < 1000:
-                print(
-                    'Warning: Your computer may be slow during this operation, be patient.')
-            cube = np.zeros((n_ch, cube_side, cube_side, run.nfft))
-            au.update_progress(0.0)
-            sys.stdout.flush()
-            for i in range(nchunk):
-                start = i * run.nvector
-                stop = start + min(run.nvector, len(data_gas) - start)
-                __project_spectrom_flux(
-                    geom, run, spectrom, data_gas, start, stop, cube)
-                au.update_progress(float(i + 1) / nchunk)
-                sys.stdout.flush()
-            return cube
-    else:
+    if memory_available > memory_needed_ncores:
         cube_list = Parallel(n_jobs=1)(delayed(__project_spectrom_flux)
                                        (geom, run, spectrom, data_gas, i) for i in range(nchunk))
-
         return sum(cube_list)
+    else:
+        print('Warning: Not enough RAM left in your device for this operation in parallel.')
+        print(
+            f'Warning: Needed {memory_needed_ncores}Mb,\nyou have {memory_available}Mb Free.')
+        print('Using a single cpu mode...')
+        return get_cube_in_sequential(geom, run, spectrom, data_gas, nchunk)
+
+
+def get_cube_in_sequential(geom, run, spectrom, data_gas, nchunk):
+    """
+    """
+    cube_side, n_ch = spectrom.cube_dims()
+    cube_size = np.zeros((n_ch, cube_side, cube_side, run.nfft)).nbytes
+    memory_needed_1core = int(cube_size/1e6)
+    memory_available = int(os.popen("free -m").readlines()[1].split()[-1])
+
+    if memory_available > memory_needed_1core:
+        if abs(memory_available-memory_needed_1core) < 1000:
+            print(
+                'Warning: Your computer may be slow during this operation, be patient.')
+        cube = np.zeros((n_ch, cube_side, cube_side, run.nfft))
+        au.update_progress(0.0)
+        sys.stdout.flush()
+        for i in range(nchunk):
+            start = i * run.nvector
+            stop = start + min(run.nvector, len(data_gas) - start)
+            __project_spectrom_flux(
+                geom, run, spectrom, data_gas, start, stop, cube)
+            au.update_progress(float(i + 1) / nchunk)
+            sys.stdout.flush()
+        return cube
+    else:
+        raise MemoryError(f'Not enough RAM in your device.')
 
 
 def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
