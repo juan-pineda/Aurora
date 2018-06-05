@@ -86,9 +86,10 @@ def get_cube_in_parallel(geom, run, spectrom, data_gas, nchunk):
     memory_needed_ncores = int((cube_size/1e6) * min(run.ncpu, nchunk))
     memory_available = int(os.popen("free -m").readlines()[1].split()[-1])
 
+    num_cores = int(run.ncpu)
     if memory_available > memory_needed_ncores:
-        cube_list = Parallel(n_jobs=1)(delayed(__project_spectrom_flux)
-                                       (geom, run, spectrom, data_gas, i) for i in range(nchunk))
+        cube_list = Parallel(n_jobs=num_cores)(delayed(__project_spectrom_flux)
+                                               (geom, run, spectrom, data_gas, i) for i in range(nchunk))
         return sum(cube_list)
     else:
         print('Warning: Not enough RAM left in your device for this operation in parallel.')
@@ -280,8 +281,9 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         # Remove duplicated emission lines
         line = line[unique_ind, :]
         # Insert the line fluxes in the right positions at the right scale
-        cube[:, y[ok_level[unique_ind]], x[ok_level[unique_ind]],
-             i] += np.float32(np.transpose(line))
+
+        cube[:, y[ok_level[unique_ind]],
+             x[ok_level[unique_ind]], i] += np.transpose(line)
 
     return cube
 
