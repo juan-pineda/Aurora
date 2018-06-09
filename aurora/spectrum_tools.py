@@ -139,7 +139,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         i = args[0]
         start = i * run.nvector
         stop = start + min(run.nvector, len(data_gas) - start)
-        cube = np.float32(np.zeros((n_ch, cube_side, cube_side, run.nfft)))
+        cube = np.zeros((n_ch, cube_side, cube_side, run.nfft))
     else:
         start, stop, cube = args
 
@@ -378,7 +378,7 @@ def __fft_spatial_convolution(m, psf_fwhm):
 
     m.cube = m.cube * psf
     m.cube = np.fft.irfft2(m.cube)
-    m.cube = np.float32(m.cube[:, index, index])
+    m.cube = m.cube[:, index, index]
 
 
 def __fft_spectral_convolution(m, psf_fwhm):
@@ -409,7 +409,7 @@ def __fft_spectral_convolution(m, psf_fwhm):
 
     m.cube = m.cube * psf
     m.cube = np.fft.irfft(m.cube, fshape, axis=0)
-    m.cube = np.float32(m.cube[index, :, :])
+    m.cube = m.cube[index, :, :]
 
 
 def __spectral_convolution_iter(m, psf_fwhm):
@@ -445,8 +445,7 @@ def __spectral_convolution_iter(m, psf_fwhm):
         channel = np.fft.rfft2(channel)
         channel = channel * psf
         channel = np.fft.irfft2(channel)
-        m.cube[:, :, i] = np.float32(
-            channel[index_0, index_1])  # NO ES CUADRADA !!! :O
+        m.cube[:, :, i] = channel[index_0, index_1]  # NO ES CUADRADA !!! :O
 
 
 def __spatial_convolution_iter(m, psf_fwhm):
@@ -475,7 +474,7 @@ def __spatial_convolution_iter(m, psf_fwhm):
         channel = np.fft.rfft2(channel)
         channel = channel * psf
         channel = np.fft.irfft2(channel)
-        m.cube[i, :, :] = np.float32(channel[index, index])
+        m.cube[i, :, :] = channel[index, index]
 
 
 def next_fast_len(target):

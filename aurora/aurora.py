@@ -139,7 +139,6 @@ def spectrom_mock(ConfigFile):
         cube_noise = cube + \
             np.random.normal(0.0, spectrom.sigma_cont, cube.shape)
 
-    cube = np.float32(cube)
     print(run.output_name)
     so.writing_datacube(geom, spectrom, run, cube)
 
