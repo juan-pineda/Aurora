@@ -99,3 +99,8 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# HDF5 AND OTHER BIG FILES
+*.hdf5
+*.fits
+.vscode/
