@@ -140,27 +140,15 @@ def get_mean_weight(temp):
 
 
 def slice_variable(data, var, start, stop, units=None):
-    # This customized procedure for 'temp' is UNFORTUNATE !
-    # It is here because pynbody is not assigning units to Internal Energy whe using gadget HDF5 files!!!!!
     if var == 'temp':
-        # This for loop is weird, but pynbody often complains/crashes the first time one tries to read the internal energy
-        for i in range(3):
-            try:
-                u = np.array(data['u'][start:stop])
-            except:
-                pass
+        u = np.array(data['u'][start:stop], dtype=np.float64)
         mu = np.ones(len(u))
         m_p = ct.m_p.to('g').value
-        # remember that 'u' was converted to [cm2/s2] during the snapshot preparison
         k_B = ct.k_B.to('g cm2 s-2 K-1').value
-        # This iterative calculation of (mu,temp) to be consistent follows pynbody model
-        for i in range(5):
-            temp = (5./3 - 1) * mu * m_p * u / k_B
-            mu = get_mean_weight(temp)
+        temp = (5./3 - 1) * mu * m_p * u / k_B
+        mu = get_mean_weight(temp)
         return temp
     if units:
-        return np.array(data[var][start:stop].in_units(units))
+        return np.array(data[var][start:stop].in_units(units), dtype=np.float64)
     else:
-        return np.array(data[var][start:stop])
-
-##################################################################################################################
+        return np.array(data[var][start:stop], dtype=np.float64)

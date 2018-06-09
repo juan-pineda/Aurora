@@ -167,15 +167,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     vect_metal = snap.slice_variable(data_gas, 'metal', start, stop)
     vect_temp = snap.slice_variable(data_gas, 'temp', start, stop, 'K')
     vect_smooth = snap.slice_variable(data_gas, 'smooth', start, stop, 'kpc')
-    # Pynbody makes some of these arrays 32L, and that causes troubles later on
-    vect_x = np.float64(vect_x)
-    vect_y = np.float64(vect_y)
-    vect_z = np.float64(vect_z)
-    vect_vz = np.float64(vect_vz)
-    vect_dens = np.float64(vect_dens)
-    vect_metal = np.float64(vect_metal)
-    vect_smooth = np.float64(vect_smooth)
-    vect_temp = np.float64(vect_temp)
+    
     if 'HII' in data_gas.keys():
         vect_HII = snap.slice_variable(data_gas, 'HII', start, stop)
     else:
