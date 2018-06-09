@@ -3,6 +3,7 @@ import gc
 import sys
 import math
 import numpy as np
+from tqdm import tqdm
 from scipy import special
 import astropy.convolution
 from scipy import interpolate
@@ -112,15 +113,11 @@ def get_cube_in_sequential(geom, run, spectrom, data_gas, nchunk):
             print(
                 'Warning: Your computer may be slow during this operation, be patient.')
         cube = np.zeros((n_ch, cube_side, cube_side, run.nfft))
-        au.update_progress(0.0)
-        sys.stdout.flush()
-        for i in range(nchunk):
+        for i in tqdm(range(nchunk)):
             start = i * run.nvector
             stop = start + min(run.nvector, len(data_gas) - start)
             __project_spectrom_flux(
-                geom, run, spectrom, data_gas, start, stop, cube)
-            au.update_progress(float(i + 1) / nchunk)
-            sys.stdout.flush()
+                geom, run, spectrom, data_gas, start, stop, cube)           
         return cube
     else:
         raise MemoryError(f'Not enough RAM in your device.')
