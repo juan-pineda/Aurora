@@ -5,3 +5,4 @@ scipy==0.17.0
 matplotlib==2.2.0
 pynbody==0.43
 scikit_learn==0.19.1
+joblib
