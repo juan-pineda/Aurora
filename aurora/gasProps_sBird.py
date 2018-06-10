@@ -10,6 +10,7 @@ the neutral hydrogen density in *physical* atoms / cm^3
 """
 
 import numpy as np
+import logging
 import scipy.interpolate.interpolate as intp
 #import unitsystem
 
@@ -51,7 +52,7 @@ class GasProperties(object):
         self.redshift_coverage = True
         if redshift > zz[-1]:
             self.redshift_coverage = False
-            print("Warning: no self-shielding at z=", redshift)
+            logging.warning("no self-shielding at z=", redshift)
         else:
             gamma_inter = intp.interp1d(zz, gamma_UVB)
             gray_inter = intp.interp1d(zz, gray_opac)

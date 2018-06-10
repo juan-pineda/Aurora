@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import math
+import logging
 import numpy as np
 import configparser
 from astropy.io import fits
@@ -153,14 +154,14 @@ class GeometryObj():
             self.gas_min_values = (np.array(
                 re.split(',|;', ''.join(self.gas_min_values.split())))).astype(np.float)
             if(len(self.gas_minmax_keys) != len(self.gas_min_values)):
-                print(
+                logging.error(
                     'The number of elements in gas_minmax_keys and gas_min_values should be equal')
                 sys.exit()
         if(self.gas_max_values != ''):
             self.gas_max_values = (np.array(
                 re.split(',|;', ''.join(self.gas_max_values.split())))).astype(np.float)
             if(len(self.gas_minmax_keys) != len(self.gas_max_values)):
-                print(
+                logging.error(
                     'The number of elements in gas_minmax_keys and gas_max_values should be equal')
                 sys.exit()
         # Filter the stellar particles according to the specified properties and boundaries (if any)
@@ -171,14 +172,14 @@ class GeometryObj():
             self.star_min_values = (np.array(
                 re.split(',|;', ''.join(self.star_min_values.split())))).astype(np.float)
             if(len(self.stars_minmax_keys) != len(self.stars_min_values)):
-                print(
+                logging.error(
                     'The number of elements in star_minmax_keys and star_min_values should be equal')
                 sys.exit()
         if(self.star_max_values != ''):
             self.star_max_values = (np.array(
                 re.split(',|;', ''.join(self.star_max_values.split())))).astype(np.float)
             if(len(self.star_minmax_keys) != len(self.star_max_values)):
-                print(
+                logging.error(
                     'The number of elements in star_minmax_keys and star_max_values should be equal')
                 sys.exit()
         # Filter the DM particles according to the specified properties and boundaries (if any)
@@ -189,14 +190,14 @@ class GeometryObj():
             self.dm_min_values = (np.array(
                 re.split(',|;', ''.join(self.dm_min_values.split())))).astype(np.float)
             if(len(self.dms_minmax_keys) != len(self.dms_min_values)):
-                print(
+                logging.error(
                     'The number of elements in dm_minmax_keys and dm_min_values should be equal')
                 sys.exit()
         if(self.dm_max_values != ''):
             self.dm_max_values = (np.array(
                 re.split(',|;', ''.join(self.dm_max_values.split())))).astype(np.float)
             if(len(self.dm_minmax_keys) != len(self.dm_max_values)):
-                print(
+                logging.error(
                     'The number of elements in dm_minmax_keys and dm_max_values should be equal')
                 sys.exit()
 
@@ -463,7 +464,7 @@ def get_allinput(ConfigFile):
     # > Parse the input parameters from ConfigFile
     # > Set the output name and check if it has the rights to write it
     if(not os.path.isfile(ConfigFile)):
-        print('// ' + ConfigFile + ' not found')
+        logging.error(f'// {ConfigFile} not found')
         return
     geom = GeometryObj()
     geom.parse_input(ConfigFile)
@@ -485,48 +486,48 @@ def get_allinput(ConfigFile):
     spectrom.set_reference()
 
     # These prints might go to a file set by the user in the future
-    print("\n............ConfigFile Warning................")
-    print("The following vars were NOT passed. Aurora will set them to")
-    print("default values or will adjust them for self-consistency:")
+    logging.warning("\n............ConfigFile Warning................")
+    logging.warning("The following vars were NOT passed. Aurora will set them to")
+    logging.warning("default values or will adjust them for self-consistency:")
     global missing_params
-    print(missing_params)
+    logging.warning(missing_params)
 
-    print("\n::::::::::::::::::::::::::::::::::::::::::::::::::::::")
-    print("Aurora is using the following parameters: \n")
+    logging.info("\n::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+    logging.info("Aurora is using the following parameters: \n")
 
-    print("input file = ", run.input_file)
-    print("output file = ", run.output_file)
-    print("output dir = ", run.output_dir)
-    print("overwrite = ", run.overwrite, "\n")
+    logging.info(f"input file = {run.input_file}")
+    logging.info(f"output file = {run.output_file}")
+    logging.info(f"output dir = {run.output_dir}")
+    logging.info(f"overwrite = {run.overwrite}\n")
 
-    print("redshift = ", geom.redshift)
-    print("luminosity distance = ", geom.dl)
-    print("angular distance = ", geom.dist_angular)
-    print("redshifted wavelength = ", geom.lambda_em)
-    print("barycenter = ", geom.barycenter)
-    print("theta = ", geom.theta)
-    print("phi = ", geom.phi)
-    print("redshift_ref", spectrom.redshift_ref, "\n")
+    logging.info(f"redshift = {geom.redshift}")
+    logging.info(f"luminosity distance = {geom.dl}")
+    logging.info(f"angular distance = {geom.dist_angular}")
+    logging.info(f"redshifted wavelength = {geom.lambda_em}")
+    logging.info(f"barycenter = {geom.barycenter}")
+    logging.info(f"theta = {geom.theta}")
+    logging.info(f"phi = {geom.phi}")
+    logging.info(f"redshift_ref= {spectrom.redshift_ref}\n")
 
-    print("field of view = ", spectrom.fieldofview)
-    print("pixsize = ", spectrom.pixsize)
-    print("spatial_dim = ", spectrom.spatial_dim)
-    print("spatial_res_kpc = ", spectrom.spatial_res_kpc, "\n")
+    logging.info(f"field of view = {spectrom.fieldofview}")
+    logging.info(f"pixsize = {spectrom.pixsize}")
+    logging.info(f"spatial_dim = {spectrom.spatial_dim}")
+    logging.info(f"spatial_res_kpc = {spectrom.spatial_res_kpc}\n")
 
-    print("FoV arcsec = ", spectrom.FoV_arcsec)
-    print("spatial_sampl = ", spectrom.spatial_sampl)
-    print("spatial_res = ", spectrom.spatial_res, "\n")
+    logging.info(f"FoV arcsec = {spectrom.FoV_arcsec}")
+    logging.info(f"spatial_sampl = {spectrom.spatial_sampl}")
+    logging.info(f"spatial_res = {spectrom.spatial_res}\n")
 
-    print("oversampling = ", spectrom.oversampling)
-    print("kernel scale = ", spectrom.kernel_scale)
-    print("target noise = ", spectrom.sigma_cont, "\n")
+    logging.info(f"oversampling = {spectrom.oversampling}")
+    logging.info(f"kernel scale = {spectrom.kernel_scale}")
+    logging.info(f"target noise = {spectrom.sigma_cont}\n")
 
-    print("velocity_range = ", spectrom.velocity_range)
-    print("velocity_sampl = ", spectrom.velocity_sampl)
-    print("spectral_dim = ", spectrom.spectral_dim)
-    print("spectral_res = ", spectrom.spectral_res, "\n")
+    logging.info(f"velocity_range = {spectrom.velocity_range}")
+    logging.info(f"velocity_sampl = {spectrom.velocity_sampl}")
+    logging.info(f"spectral_dim = {spectrom.spectral_dim}")
+    logging.info(f"spectral_res = {spectrom.spectral_res}\n")
 
-    print("spectral_range = ", spectrom.spectral_range)
-    print("spectral_sampl = ", spectrom.spectral_sampl)
-    print("::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
+    logging.info(f"spectral_range = {spectrom.spectral_range}")
+    logging.info(f"spectral_sampl = {spectrom.spectral_sampl}")
+    logging.info(f"::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
     return geom, run, spectrom

@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 from astropy.io import fits
 
 ##-- Customized python capabilities defined inside aurora --##
@@ -25,7 +26,7 @@ def set_output_filename(geom, run):
     output_name = os.path.join(run.output_dir, run.output_file)
     # Checks if the intended output file exists, and whether it can be overwritten
     if (os.path.isfile(output_name) and not(run.overwrite)):
-        print('// ' + output_name +
+        logging.warning('// ' + output_name +
               ' already exists, and [overwrite=False] !!!')
         sys.exit()
     # Split the full output filename into subdirectories,

@@ -18,6 +18,7 @@ import sys
 import pdb
 import math
 import time
+import logging
 import pynbody
 import warnings
 import numpy as np
@@ -46,6 +47,13 @@ from . import gasProps_sBird as bird
 
 warnings.filterwarnings("ignore")
 
+def __setup_logging():
+    logging.basicConfig(
+        format='%(levelname)s:%(message)s', 
+        filename='aurora.log', 
+        level=logging.INFO)
+
+
 
 def __aurora_version():
     """
@@ -68,7 +76,7 @@ def spectrom_mock(ConfigFile):
     ConfigFile : location of the configuration file containing the input
         parameters needed.
     """
-
+    __setup_logging()
     __aurora_version()
 
     # Code flow:
@@ -106,11 +114,10 @@ def spectrom_mock(ConfigFile):
     spectrom.undersample()
 
     if(spectrom.sigma_cont > 0.):
-        print('// Noise injection')
-        cube_noise = cube + \
-            np.random.normal(0.0, spectrom.sigma_cont, cube.shape)
+        logging.info('// Noise injection')
+        cube_noise = cube + np.random.normal(0.0, spectrom.sigma_cont, cube.shape)
 
-    print(run.output_name)
+    logging.info(f'Created file {run.output_name}')
     so.writing_datacube(geom, spectrom, run, cube)
 
 
