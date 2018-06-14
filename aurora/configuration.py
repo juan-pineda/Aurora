@@ -135,16 +135,6 @@ class GeometryObj():
             g_conf, 'geometry', 'gas_min_values', str)
         self.gas_max_values = read_var(
             g_conf, 'geometry', 'gas_max_values', str)
-        self.star_minmax_keys = read_var(
-            g_conf, 'geometry', 'star_minmax_keys', str)
-        self.star_min_values = read_var(
-            g_conf, 'geometry', 'star_min_values', str)
-        self.star_max_values = read_var(
-            g_conf, 'geometry', 'star_max_values', str)
-        self.dm_minmax_keys = read_var(
-            g_conf, 'geometry', 'dm_minmax_keys', str)
-        self.dm_min_values = read_var(g_conf, 'geometry', 'dm_min_values', str)
-        self.dm_max_values = read_var(g_conf, 'geometry', 'dm_max_values', str)
 
         # Filter the gas particles according to the specified properties and boundaries (if any)
         if(self.gas_minmax_keys != ''):

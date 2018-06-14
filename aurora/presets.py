@@ -14,12 +14,6 @@ default_values['geometry'] = {
     'gas_minmax_keys': [''],
     'gas_min_values': [''],
     'gas_max_values': [''],
-    'star_minmax_keys': [''],
-    'star_min_values': [''],
-    'star_max_values': [''],
-    'dm_minmax_keys': [''],
-    'dm_min_values': [''],
-    'dm_max_values': [''],
 }
 
 default_values['run'] = {
