@@ -44,7 +44,7 @@ def set_hsml_limits(run, data_gas):
             run.nfft = n_smooth
         else:
             run.fft_hsml_limits = np.arange(1.0, run.nfft + 1)
-            run.fft_hsml_limits *= run.fft_hsml_min.to('kpc')
+            run.fft_hsml_limits = run.fft_hsml_limits * run.fft_hsml_min.to('kpc')
     else:
         logging.error('No gas elements in this snapshot')
         sys.exit()
@@ -130,15 +130,19 @@ def get_mean_weight(temp):
 # WARNING IN THE NEXT FUNCTION
 # Slices a variable, removing the units information (it was problematic for some operations)
 
-
+# This customized procedure for 'temp' is UNFORTUNATE !
+# It is here because pynbody is not assigning units to Internal Energy whe using gadget HDF5 files!!!!!
 def slice_variable(data, var, start, stop, units=None):
     if var == 'temp':
+        # Remember that 'u' must be in [cm2/s2] in the snapshot
         u = np.array(data['u'][start:stop], dtype=np.float64)
         mu = np.ones(len(u))
         m_p = ct.m_p.to('g').value
         k_B = ct.k_B.to('g cm2 s-2 K-1').value
-        temp = (5./3 - 1) * mu * m_p * u / k_B
-        mu = get_mean_weight(temp)
+        # This iterative calculation of (mu,temp) to be consistent follows pynbody model
+        for i in range(5):
+            temp = (5./3 - 1) * mu * m_p * u / k_B
+            mu = get_mean_weight(temp)
         return temp
     if units:
         return np.array(data[var][start:stop].in_units(units), dtype=np.float64)

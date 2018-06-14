@@ -364,7 +364,6 @@ class SpectromObj():
             if ~np.isnan(self.spatial_res):
                 self.spatial_res_kpc = geom.arcsec_to_kpc(
                     self.spatial_res)
-                print("yeah baby love", self.spatial_res_kpc)
 
     def check_fieldofview(self, geom):
         """
