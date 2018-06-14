@@ -164,42 +164,6 @@ class GeometryObj():
                 logging.error(
                     'The number of elements in gas_minmax_keys and gas_max_values should be equal')
                 sys.exit()
-        # Filter the stellar particles according to the specified properties and boundaries (if any)
-        if(self.star_minmax_keys != ''):
-            self.star_minmax_keys = re.split(
-                ',|;', ''.join(self.star_minmax_keys.split()))
-        if(self.star_min_values != ''):
-            self.star_min_values = (np.array(
-                re.split(',|;', ''.join(self.star_min_values.split())))).astype(np.float)
-            if(len(self.stars_minmax_keys) != len(self.stars_min_values)):
-                logging.error(
-                    'The number of elements in star_minmax_keys and star_min_values should be equal')
-                sys.exit()
-        if(self.star_max_values != ''):
-            self.star_max_values = (np.array(
-                re.split(',|;', ''.join(self.star_max_values.split())))).astype(np.float)
-            if(len(self.star_minmax_keys) != len(self.star_max_values)):
-                logging.error(
-                    'The number of elements in star_minmax_keys and star_max_values should be equal')
-                sys.exit()
-        # Filter the DM particles according to the specified properties and boundaries (if any)
-        if(self.dm_minmax_keys != ''):
-            self.dm_minmax_keys = re.split(
-                ',|;', ''.join(self.dm_minmax_keys.split()))
-        if(self.dm_min_values != ''):
-            self.dm_min_values = (np.array(
-                re.split(',|;', ''.join(self.dm_min_values.split())))).astype(np.float)
-            if(len(self.dms_minmax_keys) != len(self.dms_min_values)):
-                logging.error(
-                    'The number of elements in dm_minmax_keys and dm_min_values should be equal')
-                sys.exit()
-        if(self.dm_max_values != ''):
-            self.dm_max_values = (np.array(
-                re.split(',|;', ''.join(self.dm_max_values.split())))).astype(np.float)
-            if(len(self.dm_minmax_keys) != len(self.dm_max_values)):
-                logging.error(
-                    'The number of elements in dm_minmax_keys and dm_max_values should be equal')
-                sys.exit()
 
 # NOTA MENTAL!
 # Aqui necesito una correccion: Que se puedan superseed *dist_angular* y *dl*

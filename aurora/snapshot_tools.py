@@ -97,14 +97,6 @@ def set_snapshots_ready(geom, run, data):
     if(geom.gas_minmax_keys != ''):
         data_gas = filter_array(
             data_gas, geom.gas_minmax_keys, geom.gas_min_values, geom.gas_max_values)
-    # Apply filters to stellar particles if it was specified
-    if(geom.star_minmax_keys != ''):
-        data_star = filter_array(
-            data_star, geom.star_minmax_keys, geom.star_min_values, geom.star_max_values)
-    # Apply filters to DM particles if it was specified
-    if(geom.dm_minmax_keys != ''):
-        data_dm = filter_array(data_dm, geom.dm_minmax_keys,
-                               geom.dm_min_values, geom.dm_max_values)
     # Informative prints
     nstars = len(data_star)
     ngas = len(data_gas)
@@ -148,3 +140,6 @@ def slice_variable(data, var, start, stop, units=None):
         return np.array(data[var][start:stop].in_units(units), dtype=np.float64)
     else:
         return np.array(data[var][start:stop], dtype=np.float64)
+
+
+
