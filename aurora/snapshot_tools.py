@@ -131,7 +131,8 @@ def slice_variable(data, var, start, stop, units=None):
         mu = np.ones(len(u))
         m_p = ct.m_p.to('g').value
         k_B = ct.k_B.to('g cm2 s-2 K-1').value
-        # This iterative calculation of (mu,temp) to be consistent follows pynbody model
+        # For consistency, we perform an iterative calculation of (mu,temp) 
+		# as it is done by pynbody.
         for i in range(5):
             temp = (5./3 - 1) * mu * m_p * u / k_B
             mu = get_mean_weight(temp)

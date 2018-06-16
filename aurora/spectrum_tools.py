@@ -163,7 +163,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     vect_metal = snap.slice_variable(data_gas, 'metal', start, stop)
     vect_temp = snap.slice_variable(data_gas, 'temp', start, stop, 'K')
     vect_smooth = snap.slice_variable(data_gas, 'smooth', start, stop, 'kpc')
-    
+   
     if 'HII' in data_gas.keys():
         vect_HII = snap.slice_variable(data_gas, 'HII', start, stop)
     else:
@@ -175,24 +175,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     # We only want to use the ionised-gas cells inside the field of view
     x = (np.floor((vect_x + cube_side * pixsize/2.) / pixsize)).astype(int)
     y = (np.floor((vect_y + cube_side * pixsize/2.) / pixsize)).astype(int)
-    ok = np.where((x >= 0) & (x < cube_side) & (y >= 0) & (y < cube_side) &
-                  (vect_HII > 0.))
-    nok = len(ok[0])
-    if(nok == 0):
-        pass
 
-    vect_x = vect_x[ok]
-    vect_y = vect_y[ok]
-    vect_z = vect_z[ok]
-    vect_vz = vect_vz[ok]
-    vect_dens = vect_dens[ok]
-    vect_metal = vect_metal[ok]
-    vect_temp = vect_temp[ok]
-    vect_HII = vect_HII[ok]
-    vect_mu = vect_mu[ok]
-    vect_smooth = vect_smooth[ok]
-    x = x[ok]
-    y = y[ok]
     vect_index = x + cube_side * y
 
     # Velocity dispersion of the emission line, in [cm s-1]

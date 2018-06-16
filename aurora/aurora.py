@@ -83,13 +83,18 @@ def spectrom_mock(ConfigFile):
     # =====================
     # > Load the input parameters from ConfigFile
     # > Read the snapshot
-    # > Set geometrical orientation and filter the inteded gas particles
+    # > Set geometrical orientation and retain only the desired gas particles
     geom, run, spectrom = config.get_allinput(ConfigFile)
     cube_side, n_ch = spectrom.cube_dims()
     data = snap.read_snap(run.input_file)
     data_gas = snap.set_snapshots_ready(geom, run, data)[0]
     del data
     gc.collect()
+    
+    # > Retain only those gas particles wich lie inside the field of view
+	# > need to make sure that units are the same! (i.e., kpc)
+    lim = spectrom.fieldofview.value/2.
+    data_gas = snap.filter_array(data_gas,['x','y'],2*[-lim],2*[lim])
 
     # Code flow:
     # =====================
