@@ -18,14 +18,14 @@ def read_snap(input_file):
 
 # For a given array, and a given property (key), it drops all data outside some
 # provided boundaries
-def filter_array(data, prop, mini, maxi):
+def filter_array(data, prop, mini, maxi, units):
     if type(prop) == list:
         output = data
         for i in range(len(prop)):
-            logging.info(f"Filtering property: {i}, with min/max: {mini[i]}, {maxi[i]}")
-            output = filter_array(output, prop[i], mini[i], maxi[i])
+            logging.info(f"Filtering property: {prop[i]}, with min/max: {mini[i]},{maxi[i]}, in units {units[i]}")
+            output = filter_array(output, prop[i], mini[i], maxi[i], units[i])
     else:
-        ok = np.where((data[prop] >= mini) & (data[prop] <= maxi))
+        ok = np.where((data[prop].in_units(units) >= mini) & (data[prop].in_units(units) <= maxi))
         if(ok[0].size == 0):
             logging.error('// No data within specified boundaries')
             sys.exit()

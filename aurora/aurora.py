@@ -92,9 +92,8 @@ def spectrom_mock(ConfigFile):
     gc.collect()
     
     # > Retain only those gas particles wich lie inside the field of view
-	# > need to make sure that units are the same! (i.e., kpc)
-    lim = spectrom.fieldofview.value/2.
-    data_gas = snap.filter_array(data_gas,['x','y'],2*[-lim],2*[lim])
+    lim = spectrom.fieldofview.to('kpc').value/2.
+    data_gas = snap.filter_array(data_gas,['x','y'],2*[-lim],2*[lim],2*['kpc'])
 
     # Code flow:
     # =====================
