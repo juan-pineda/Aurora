@@ -20,6 +20,7 @@ from . import snapshot_tools as snap
 from . import gasProps_sBird as bird
 from . import datacube as dc
 from . import constants as ct
+from . import emitters as emit
 
 
 def int_gaussian(x, dx, mu, sigma):
@@ -139,69 +140,40 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     else:
         start, stop, cube = args
 
-    # Define the main constants in the right system of units to make it simpler
-    # (some operations with sliced vectors were giving the wrong units)
-    kpc = const.kpc.to('cm').value
-    c = const.c.to('cm/s').value
-    Halpha0 = ct.Halpha0.to('angstrom').value
-    pixsize = spectrom.pixsize.to('kpc').value
-    m_p = ct.m_p.to('g').value
-    k_B = ct.k_B.to('g cm2 s-2 K-1').value
-    h = ct.h.to('erg s').value
-
 #    if geom.redshift > 0:
 #        dl = geom.dl.to('cm').value
 #    else:
 #        dl = geom.dl.to('pc').value
 
-    # Slice the info for the particles in this chunk
-    vect_x = snap.slice_variable(data_gas, 'x', start, stop, 'kpc')
-    vect_y = snap.slice_variable(data_gas, 'y', start, stop, 'kpc')
-    vect_z = snap.slice_variable(data_gas, 'z', start, stop, 'kpc')
-    vect_dens = snap.slice_variable(data_gas, 'rho', start, stop, 'g cm**-3')
-    vect_vz = snap.slice_variable(data_gas, 'vz', start, stop, 'cm s**-1')
-    vect_metal = snap.slice_variable(data_gas, 'metal', start, stop)
-    vect_temp = snap.slice_variable(data_gas, 'temp', start, stop, 'K')
-    vect_smooth = snap.slice_variable(data_gas, 'smooth', start, stop, 'kpc')
-   
-    if 'HII' in data_gas.keys():
-        vect_HII = snap.slice_variable(data_gas, 'HII', start, stop)
-    else:
-        vect_HII = np.zeros(stop - start)
-        a = bird.GasProperties(spectrom.redshift_ref)
-        vect_HII = 1 - a._neutral_fraction(ct.Xh * vect_dens/m_p, vect_temp)
-    vect_mu = 4. / (3*ct.Xh + 1 + 4*vect_HII*ct.Xh)
-
-    # We only want to use the ionised-gas cells inside the field of view
-    x = (np.floor((vect_x + cube_side * pixsize/2.) / pixsize)).astype(int)
-    y = (np.floor((vect_y + cube_side * pixsize/2.) / pixsize)).astype(int)
-
-    vect_index = x + cube_side * y
+	# This object allows to calculate the Halpha flux, and line broadening
+    em = emit.Emitters(data_gas[start:stop],spectrom.redshift_ref)
+    em.get_luminosity()
+    em.get_dispersion()
 
     # Velocity dispersion of the emission line, in [cm s-1]
-    Halpha_sigma = np.sqrt(k_B * vect_temp / (vect_mu * m_p))
-
-    # Determine the total emitted fluxes. We use case-B Hydrogen effective
-    # recombination rate coefficient - Osterbrock & Ferland (2006)
-    alphaH = ct.alphaH.to('cm3/s').value * (vect_temp / 1.0e4)**-0.845
-    dens_ion = vect_dens * vect_HII * ct.Xh / m_p
-    Halpha_lum = (vect_smooth*kpc)**3 * (dens_ion)**2 * \
-        (h*c/Halpha0) * alphaH  # [erg.cm/A/s]
-
+    Halpha_sigma = em.dispersion.to('cm s**-1').value
+    # Total emitted luminosity, and total emitted flux
+    Halpha_lum = em.Halpha_lum.to('erg cm AA**-1 s**-1').value
     # A factor 1e8 is needed to cancel out units [cm/A]
     # But we want to store in units of 1e16, we use a factor 1e-8
     Halpha_flux = Halpha_lum * 1e-8 / spectrom.pixsize.to('pc').value**2
 
+    pixsize = spectrom.pixsize.to('kpc').value
+    x = (np.floor((em.x.to('kpc').value + cube_side * pixsize/2.) / pixsize)).astype(int)
+    y = (np.floor((em.y.to('kpc').value + cube_side * pixsize/2.) / pixsize)).astype(int)
+
+    vect_index = x + cube_side * y
+
     # Compute the fluxes scale by scale
     for i in range(run.nfft):
         if (i == 0):
-            ok_level = np.where(vect_smooth < 1.1 * run.fft_hsml_limits[i])[0]
+            ok_level = np.where(em.smooth.to('kpc').value < 1.1 * run.fft_hsml_limits[i])[0]
         elif (i == run.nfft - 1):
-            ok_level = np.where(vect_smooth > 1.1 *
+            ok_level = np.where(em.smooth.to('kpc').value  > 1.1 *
                                 run.fft_hsml_limits[i-1])[0]
         else:
-            ok_level = np.where((vect_smooth < 1.1 * run.fft_hsml_limits[i]) & (
-                vect_smooth > 1.1 * run.fft_hsml_limits[i - 1]))[0]
+            ok_level = np.where((em.smooth.to('kpc').value < 1.1 * run.fft_hsml_limits[i]) & (
+                em.smooth.to('kpc').value > 1.1 * run.fft_hsml_limits[i - 1]))[0]
         nok_level = ok_level.size
 
         if(nok_level == 0):
@@ -222,10 +194,12 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         #   ln ln ln ... ln]
 
         Ha_obs_level = np.transpose(
-            np.tile(vect_vz[ok_level], (n_ch, 1)))  # Now in velocity!
+            np.tile(em.vz.to('cm s**-1').value[ok_level], (n_ch, 1)))  # Now in velocity!
         Ha_sigma_level = np.transpose(
             np.tile(Halpha_sigma[ok_level], (n_ch, 1)))
         Ha_flux_level = np.transpose(np.tile(Halpha_flux[ok_level], (n_ch, 1)))
+
+        print('Llego hasta aqui???')
 
         # Spectral convolution
         if(spectrom.spectral_res > 0):

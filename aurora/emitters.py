@@ -7,6 +7,7 @@ from . import gasProps_sBird as bird
 
 class Emitters:
 
+	# Get the main physical quantities in the simulation
 	def __init__(self, data_gas,redshift=None):
 		self.N = len(data_gas)
 		self.redshift = redshift
@@ -17,10 +18,21 @@ class Emitters:
 		self.vz = np.array(data_gas['vz'].in_units('cm s**-1'))*unit.cm/unit.s
 		self.smooth = np.array(data_gas['smooth'].in_units('kpc'))*unit.kpc
 		self.u = np.array(data_gas['u'].in_units('cm**2 s**-2'))*unit.cm**2/unit.s**2
+
 		self.temp = self.get_temp().decompose()
 		self.HII = self.get_HII(data_gas)
-		self.mu = self.get_mu()	
-	
+		self.mu = self.get_mu()
+
+	def get_luminosity(self):
+		self.alphaH = self.get_alphaH()
+		self.dens_ion = self.get_dens_ion()
+		Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH  # [erg.cm/A/s]
+		self.Halpha_lum = Halpha_lum.to('erg cm AA**-1 s**-1')
+				
+	def get_dispersion(self):
+		sigma = np.sqrt(ct.k_B * self.temp / (self.mu * ct.m_p))
+		self.dispersion = sigma.to('cm s**-1')
+
 	def get_temp(self):
 		mu = np.ones(self.N)
 		for i in range(5):
@@ -46,4 +58,23 @@ class Emitters:
 	def get_mu(self):
 		mu = 4. / (3*ct.Xh + 1 + 4*self.HII*ct.Xh)
 		return mu
+
+	# We use case-B Hydrogen effective
+    # recombination rate coefficient - Osterbrock & Ferland (2006)
+	# effective recombination rate when temperature is accounted for
+	def get_alphaH(self):
+		alphaH = ct.alphaH.to('cm3/s') * (self.temp.to('K').value / 1.0e4)**-0.845
+		return alphaH
+
+	def get_dens_ion(self):
+		dens_ion = self.dens * self.HII * ct.Xh / ct.m_p
+		return dens_ion
+
+
+
+
+
+
+
+
 
