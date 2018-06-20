@@ -40,6 +40,9 @@ class Emitters:
 			mu = self.get_mean_weight(temp)
 		return temp
 
+	# Naive way of approximating the mean molecular weight
+	# this is CUSTOMIZED for Mirage project, for which there is no
+	# ElectroAbundance information stored !!!
 	def get_mean_weight(self,temp):
 	    mu = np.ones(len(temp))
 	    mu[np.where(temp >= 1e4*unit.K)[0]] = 0.59

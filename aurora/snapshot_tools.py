@@ -106,41 +106,5 @@ def set_snapshots_ready(geom, run, data):
     logging.info(f'// n_dm      -> {ndm}')
     return [data_gas, data_star, data_dm]
 
-####################################
-# WARNING IN THE NEXT TWO FUNCTIONS  !!!!!!!!!!!!!!!!!!!! WARNING WARNING WARNING
-############################################################################################################
-# Naive way of approximating the mean molecular weight
-# this is CUSTOMIZED for Mirage project, for which there is no ElectroAbundance information stored !!!
-
-
-def get_mean_weight(temp):
-    mu = np.ones(len(temp))
-    mu[np.where(temp >= 1e4)[0]] = 0.59
-    mu[np.where(temp < 1e4)[0]] = 1.3
-    return mu
-
-# WARNING IN THE NEXT FUNCTION
-# Slices a variable, removing the units information (it was problematic for some operations)
-
-# This customized procedure for 'temp' is UNFORTUNATE !
-# It is here because pynbody is not assigning units to Internal Energy whe using gadget HDF5 files!!!!!
-def slice_variable(data, var, start, stop, units=None):
-    if var == 'temp':
-        # Remember that 'u' must be in [cm2/s2] in the snapshot
-        u = np.array(data['u'][start:stop], dtype=np.float64)
-        mu = np.ones(len(u))
-        m_p = ct.m_p.to('g').value
-        k_B = ct.k_B.to('g cm2 s-2 K-1').value
-        # For consistency, we perform an iterative calculation of (mu,temp) 
-		# as it is done by pynbody.
-        for i in range(5):
-            temp = (5./3 - 1) * mu * m_p * u / k_B
-            mu = get_mean_weight(temp)
-        return temp
-    if units:
-        return np.array(data[var][start:stop].in_units(units), dtype=np.float64)
-    else:
-        return np.array(data[var][start:stop], dtype=np.float64)
-
 
 
