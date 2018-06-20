@@ -7,9 +7,11 @@ from . import gasProps_sBird as bird
 
 class Emitters:
 
-	# Get the main physical quantities in the simulation
+	# Get the main physical quantities in the simulation, converting pynbody
+	# instances to astropy ones, to assure compatibility across operations
 	def __init__(self, data_gas,redshift=None):
 		self.N = len(data_gas)
+		self.data = data_gas
 		self.redshift = redshift
 		self.x = np.array(data_gas['x'].in_units('kpc'))*unit.kpc
 		self.y = np.array(data_gas['y'].in_units('kpc'))*unit.kpc
@@ -19,17 +21,19 @@ class Emitters:
 		self.smooth = np.array(data_gas['smooth'].in_units('kpc'))*unit.kpc
 		self.u = np.array(data_gas['u'].in_units('cm**2 s**-2'))*unit.cm**2/unit.s**2
 
-		self.temp = self.get_temp().decompose()
-		self.HII = self.get_HII(data_gas)
-		self.mu = self.get_mu()
+	# Derived physical quantities
+	def get_state(self):
+		self.get_temp()
+		self.get_HII()
+		self.get_mu()
+		self.get_dens_ion()
 
 	def get_luminosity(self):
-		self.alphaH = self.get_alphaH()
-		self.dens_ion = self.get_dens_ion()
-		Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH  # [erg.cm/A/s]
+		self.get_alphaH()
+		Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH 
 		self.Halpha_lum = Halpha_lum.to('erg cm AA**-1 s**-1')
 				
-	def get_dispersion(self):
+	def get_vel_dispersion(self):
 		sigma = np.sqrt(ct.k_B * self.temp / (self.mu * ct.m_p))
 		self.dispersion = sigma.to('cm s**-1')
 
@@ -38,7 +42,7 @@ class Emitters:
 		for i in range(5):
 			temp = (5./3 - 1) * mu * ct.m_p * self.u / ct.k_B
 			mu = self.get_mean_weight(temp)
-		return temp
+		self.temp = temp.decompose().to('K')
 
 	# Naive way of approximating the mean molecular weight
 	# this is CUSTOMIZED for Mirage project, for which there is no
@@ -49,31 +53,26 @@ class Emitters:
 	    mu[np.where(temp < 1e4*unit.K)[0]] = 1.3
 	    return mu
 
-	def get_HII(self,data_gas):
-		if 'HII' in data_gas.keys():
-			HII = data_gas['HII']
+	def get_HII(self):
+		if 'HII' in self.data.keys():
+			HII = self.data['HII']
 		else:
-			HII = np.zeros(self.N)
 			a = bird.GasProperties(self.redshift)
 			HII = 1 - a._neutral_fraction(ct.Xh * (self.dens.to('g cm**-3')/ct.m_p.to('g')).value, self.temp.value)
-		return HII
+		self.HII = HII		
 
 	def get_mu(self):
 		mu = 4. / (3*ct.Xh + 1 + 4*self.HII*ct.Xh)
-		return mu
-
-	# We use case-B Hydrogen effective
-    # recombination rate coefficient - Osterbrock & Ferland (2006)
-	# effective recombination rate when temperature is accounted for
-	def get_alphaH(self):
-		alphaH = ct.alphaH.to('cm3/s') * (self.temp.to('K').value / 1.0e4)**-0.845
-		return alphaH
+		self.mu = mu
 
 	def get_dens_ion(self):
-		dens_ion = self.dens * self.HII * ct.Xh / ct.m_p
-		return dens_ion
+		self.dens_ion = (self.dens * self.HII * ct.Xh / ct.m_p)
 
-
+    # We use case-B Hydrogen effective
+    # recombination rate coefficient - Osterbrock & Ferland (2006)
+    # effective recombination rate when temperature is accounted for
+	def get_alphaH(self):
+		self.alphaH = ct.alphaH.to('cm3/s')*(self.temp.to('K').value / 1.0e4)**-0.845
 
 
 

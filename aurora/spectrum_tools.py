@@ -147,8 +147,9 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
 
 	# This object allows to calculate the Halpha flux, and line broadening
     em = emit.Emitters(data_gas[start:stop],spectrom.redshift_ref)
+    em.get_state()
     em.get_luminosity()
-    em.get_dispersion()
+    em.get_vel_dispersion()
 
     # Velocity dispersion of the emission line, in [cm s-1]
     Halpha_sigma = em.dispersion.to('cm s**-1').value
