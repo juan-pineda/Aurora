@@ -140,30 +140,27 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     else:
         start, stop, cube = args
 
+    this_chunk = data_gas[start:stop]
+
 #    if geom.redshift > 0:
 #        dl = geom.dl.to('cm').value
 #    else:
 #        dl = geom.dl.to('pc').value
 
 	# This object allows to calculate the Halpha flux, and line broadening
-    em = emit.Emitters(data_gas[start:stop],spectrom.redshift_ref)
+    em = emit.Emitters(this_chunk,spectrom.redshift_ref)
     em.get_state()
     em.get_luminosity()
     em.get_vel_dispersion()
 
-    # Velocity dispersion of the emission line, in [cm s-1]
+    # Vel. dispersion (broadening of emission line), total luminosity and flux
     Halpha_sigma = em.dispersion.to('cm s**-1').value
-    # Total emitted luminosity, and total emitted flux
     Halpha_lum = em.Halpha_lum.to('erg cm AA**-1 s**-1').value
     # A factor 1e8 is needed to cancel out units [cm/A]
     # But we want to store in units of 1e16, we use a factor 1e-8
     Halpha_flux = Halpha_lum * 1e-8 / spectrom.pixsize.to('pc').value**2
 
-    pixsize = spectrom.pixsize.to('kpc').value
-    x = (np.floor((em.x.to('kpc').value + cube_side * pixsize/2.) / pixsize)).astype(int)
-    y = (np.floor((em.y.to('kpc').value + cube_side * pixsize/2.) / pixsize)).astype(int)
-
-    vect_index = x + cube_side * y
+    x, y, index = spectrom.position_in_pixels(em.x,em.y)
 
     # Compute the fluxes scale by scale
     for i in range(run.nfft):
@@ -182,7 +179,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
 
         # Unique indices (pixels) to which particles in this group contribute
         unique_val, unique_ind = np.unique(
-            vect_index[ok_level], return_index=True)
+            index[ok_level], return_index=True)
 
         # Retain only line centers/broadenings for particles in this group,
         # arranged in a matrix where each row is a particle, and columns
@@ -199,8 +196,6 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         Ha_sigma_level = np.transpose(
             np.tile(Halpha_sigma[ok_level], (n_ch, 1)))
         Ha_flux_level = np.transpose(np.tile(Halpha_flux[ok_level], (n_ch, 1)))
-
-        print('Llego hasta aqui???')
 
         # Spectral convolution
         if(spectrom.spectral_res > 0):
@@ -222,7 +217,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
 
         # Sum all the lines for a given index
         for j in range(unique_val.size):
-            to_sum = np.where(vect_index[ok_level] == unique_val[j])[0]
+            to_sum = np.where(index[ok_level] == unique_val[j])[0]
             line[unique_ind[j], :] = np.sum(line[to_sum, :], axis=0)
         # Remove duplicated emission lines
         line = line[unique_ind, :]

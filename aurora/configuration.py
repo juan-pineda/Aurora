@@ -260,6 +260,15 @@ class SpectromObj():
         n_ch = self.spectral_dim
         return cube_side, n_ch
 
+    def position_in_pixels(self,x,y):
+        cube_side, n_ch = self.cube_dims()
+        x = (x / self.pixsize).decompose()
+        y = (y / self.pixsize).decompose()
+        x = (np.floor(x + cube_side / 2)).astype(int)
+        y = (np.floor(y + cube_side / 2)).astype(int)
+        index = x + cube_side * y
+        return x,y,index
+
     def oversample(self):
         """
         Adjust the configuration parameters to oversample the target
