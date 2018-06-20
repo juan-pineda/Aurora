@@ -104,3 +104,5 @@ ENV/
 *.hdf5
 *.fits
 .vscode/
+
+*.swp
