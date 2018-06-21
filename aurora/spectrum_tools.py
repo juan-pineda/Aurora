@@ -140,15 +140,13 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     else:
         start, stop, cube = args
 
-    this_chunk = data_gas[start:stop]
-
 #    if geom.redshift > 0:
 #        dl = geom.dl.to('cm').value
 #    else:
 #        dl = geom.dl.to('pc').value
 
 	# This object allows to calculate the Halpha flux, and line broadening
-    em = emit.Emitters(this_chunk,spectrom.redshift_ref)
+    em = emit.Emitters(data_gas[start:stop], spectrom.redshift_ref)
     em.get_state()
     em.get_luminosity()
     em.get_vel_dispersion()
@@ -162,23 +160,16 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
 
     x, y, index = spectrom.position_in_pixels(em.x,em.y)
 
+	# scale to which each particle belongs according to its smoothing lenght
+    scale = np.digitize(em.smooth.to('kpc'), 1.1 * run.fft_hsml_limits.to('kpc'))
+
     # Compute the fluxes scale by scale
-    for i in range(run.nfft):
-        if (i == 0):
-            ok_level = np.where(em.smooth < 1.1 * run.fft_hsml_limits[i])[0]
-        elif (i == run.nfft - 1):
-            ok_level = np.where(em.smooth  > 1.1 * run.fft_hsml_limits[i-1])[0]
-        else:
-            ok_level = np.where((em.smooth < 1.1 * run.fft_hsml_limits[i]) & (
-                em.smooth > 1.1 * run.fft_hsml_limits[i - 1]))[0]
+    for i in np.unique(scale):
+        ok_level = np.where(scale == i)[0]
         nok_level = ok_level.size
-
-        if(nok_level == 0):
-            continue
-
+        
         # Unique indices (pixels) to which particles in this group contribute
-        unique_val, unique_ind = np.unique(
-            index[ok_level], return_index=True)
+        unique_val, unique_ind = np.unique(index[ok_level], return_index=True)
 
         # Retain only line centers/broadenings for particles in this group,
         # arranged in a matrix where each row is a particle, and columns
