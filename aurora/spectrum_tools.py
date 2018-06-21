@@ -3,6 +3,7 @@ import gc
 import sys
 import math
 import logging
+import astropy
 import numpy as np
 from tqdm import tqdm
 from scipy import special
@@ -44,6 +45,12 @@ def int_gaussian(x, dx, mu, sigma):
     B = special.erf((x-dx/2-mu)/np.sqrt(2)/sigma)
     return np.abs((A-B)/2)
 
+def int_gaussian_with_units(x, dx, mu, sigma):
+    dx = dx.to(x.unit)
+    mu = mu.to(x.unit)
+    sigma = sigma.to(x.unit)
+    inte = int_gaussian(x.value, dx.value, mu.value, sigma.value)
+    return inte*x.unit
 
 def __project_all_chunks(geom, run, spectrom, data_gas):
     """
@@ -151,8 +158,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     em.get_luminosity()
     em.get_vel_dispersion()
 
-    # Vel. dispersion (broadening of emission line), total luminosity and flux
-    Halpha_sigma = em.dispersion.to('cm s**-1').value
+    Halpha_sigma = em.dispersion.to('cm s**-1')
     Halpha_lum = em.Halpha_lum.to('erg cm AA**-1 s**-1').value
     # A factor 1e8 is needed to cancel out units [cm/A]
     # But we want to store in units of 1e16, we use a factor 1e-8
@@ -182,7 +188,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         #   ln ln ln ... ln]
 
         Ha_obs_level = np.transpose(
-            np.tile(em.vz.to('cm s**-1').value[ok_level], (n_ch, 1)))  # Now in velocity!
+            np.tile(em.vz[ok_level], (n_ch, 1)))  # Now in velocity!
         Ha_sigma_level = np.transpose(
             np.tile(Halpha_sigma[ok_level], (n_ch, 1)))
         Ha_flux_level = np.transpose(np.tile(Halpha_flux[ok_level], (n_ch, 1)))
@@ -194,13 +200,13 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
             Ha_sigma_level = np.sqrt(Ha_sigma_level**2+psf_sigma**2)
 
         # Emission line array creation. Flux in erg.s^-1.cm^-2.microns^-1
-        line = np.tile(spectrom.vel_channels.to(
-            'cm s-1').value, (nok_level, 1))
-        ch_width = np.ones([nok_level, n_ch])
-        ch_width *= spectrom.velocity_sampl.to('cm s-1').value
+        line = np.tile(spectrom.vel_channels, (nok_level, 1))
+        ch_width = np.ones([nok_level, n_ch]) * spectrom.velocity_sampl
         # Integrated flux inside each velocity channel given its position and width
-        line_Ha = int_gaussian(line, ch_width, Ha_obs_level,
-                               Ha_sigma_level) * Ha_flux_level
+        print(int_gaussian_with_units(line, ch_width, Ha_obs_level,
+                               Ha_sigma_level))
+        line_Ha = int_gaussian_with_units(line, ch_width, Ha_obs_level,
+                               Ha_sigma_level).to('cm s**-1').value * Ha_flux_level
 
         # Divide by the effective channel width
         line = line_Ha / spectrom.velocity_sampl.to('km s^-1').value
