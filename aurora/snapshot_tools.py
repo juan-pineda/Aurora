@@ -3,6 +3,8 @@ import sys
 import logging
 import pynbody
 import numpy as np
+from astropy import units as unit
+
 from . import constants as ct
 
 # Reads the simulation snapshot file
@@ -40,11 +42,11 @@ def set_hsml_limits(run, data_gas):
         smooth = np.unique(data_gas['smooth'])
         n_smooth = len(smooth)
         if((n_smooth > 1) & (n_smooth < 20)):
-            run.fft_hsml_limits = np.sort(smooth).in_units('kpc')
+            run.fft_hsml_limits = np.sort(smooth).in_units('kpc')*unit.kpc
             run.nfft = n_smooth
         else:
             run.fft_hsml_limits = np.arange(1.0, run.nfft + 1)
-            run.fft_hsml_limits = run.fft_hsml_limits * run.fft_hsml_min.to('kpc')
+            run.fft_hsml_limits = run.fft_hsml_limits * run.fft_hsml_min.to('kpc') * unit.kpc
     else:
         logging.error('No gas elements in this snapshot')
         sys.exit()

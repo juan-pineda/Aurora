@@ -165,13 +165,12 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     # Compute the fluxes scale by scale
     for i in range(run.nfft):
         if (i == 0):
-            ok_level = np.where(em.smooth.to('kpc').value < 1.1 * run.fft_hsml_limits[i])[0]
+            ok_level = np.where(em.smooth < 1.1 * run.fft_hsml_limits[i])[0]
         elif (i == run.nfft - 1):
-            ok_level = np.where(em.smooth.to('kpc').value  > 1.1 *
-                                run.fft_hsml_limits[i-1])[0]
+            ok_level = np.where(em.smooth  > 1.1 * run.fft_hsml_limits[i-1])[0]
         else:
-            ok_level = np.where((em.smooth.to('kpc').value < 1.1 * run.fft_hsml_limits[i]) & (
-                em.smooth.to('kpc').value > 1.1 * run.fft_hsml_limits[i - 1]))[0]
+            ok_level = np.where((em.smooth < 1.1 * run.fft_hsml_limits[i]) & (
+                em.smooth > 1.1 * run.fft_hsml_limits[i - 1]))[0]
         nok_level = ok_level.size
 
         if(nok_level == 0):
@@ -240,10 +239,10 @@ def __cube_convolution(geom, run, spectrom, cube):
     """
     cube_side, n_ch = spectrom.cube_dims()
     for i in range(run.nfft):
-        logging.info(f"Preparing for spatial smoothing, kernel = {round(run.fft_hsml_limits[i]*1000, 1)} pc")
+        logging.info(f"Preparing for spatial smoothing, kernel = {round(run.fft_hsml_limits[i].value*1000, 1)} pc")
         sys.stdout.flush()
         # Kernel smoothing
-        scale_fwhm = run.fft_hsml_limits[i] / spectrom.pixsize.to('kpc').value
+        scale_fwhm = (run.fft_hsml_limits[i] / spectrom.pixsize).decompose().value
         scale_sigma = spectrom.kernel_scale * scale_fwhm / ct.fwhm_sigma
         logging.info(f"Size of the kernel in pixels = {round(scale_sigma, 1)}")
         # Enlarge the kernel adding the effect of the PSF
