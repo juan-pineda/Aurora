@@ -187,35 +187,35 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         #   .  .  .  ...
         #   ln ln ln ... ln]
 
-        Ha_obs_level = np.transpose(np.tile(em.vz[ok_level], (n_ch, 1)))
-        Ha_sigma_level = np.transpose(np.tile(em.dispersion[ok_level], (n_ch, 1)))
-        Ha_flux_level = np.transpose(np.tile(Halpha_flux[ok_level], (n_ch, 1)))
+        line_center = np.transpose(np.tile(em.vz[ok_level], (n_ch, 1)))
+        line_sigma = np.transpose(np.tile(em.dispersion[ok_level], (n_ch, 1)))
+        line_flux = np.transpose(np.tile(Halpha_flux[ok_level], (n_ch, 1)))
 
         # Spectral convolution
         if(spectrom.spectral_res > 0):
             psf_fwhm = c/spectrom.spectral_res
             psf_sigma = psf_fwhm / ct.fwhm_sigma
-            Ha_sigma_level = np.sqrt(Ha_sigma_level**2+psf_sigma**2)
+            line_sigma = np.sqrt(line_sigma**2+psf_sigma**2)
 
-        line = np.tile(spectrom.vel_channels, (nok_level, 1))
-        ch_width = np.tile(spectrom.velocity_sampl, (nok_level, n_ch))
+        channel_center = np.tile(spectrom.vel_channels, (nok_level, 1))
+        channel_width = np.tile(spectrom.velocity_sampl, (nok_level, n_ch))
         # Integrated flux inside each velocity channel given its position and width
-        line_Ha = int_gaussian_with_units(line, ch_width, Ha_obs_level, 
-            Ha_sigma_level) * Ha_flux_level
+        flux_in_channels = int_gaussian_with_units(channel_center, channel_width, line_center, 
+            line_sigma) * line_flux
 
         # Divide by the effective channel width
-        line = line_Ha.to('erg s^-1 pc^-2').value / spectrom.velocity_sampl.to('km s^-1').value
+        eff_flux = flux_in_channels.to('erg s^-1 pc^-2').value / spectrom.velocity_sampl.to('km s^-1').value
 
         # Sum all the lines for a given index
         for j in range(unique_val.size):
             to_sum = np.where(index[ok_level] == unique_val[j])[0]
-            line[unique_ind[j], :] = np.sum(line[to_sum, :], axis=0)
+            eff_flux[unique_ind[j], :] = np.sum(eff_flux[to_sum, :], axis=0)
         # Remove duplicated emission lines
-        line = line[unique_ind, :]
+        eff_flux = eff_flux[unique_ind, :]
         # Insert the line fluxes in the right positions at the right scale
 
         cube[:, y[ok_level[unique_ind]],
-             x[ok_level[unique_ind]], i] += np.transpose(line)
+             x[ok_level[unique_ind]], i] += np.transpose(eff_flux)
 
     return cube
 
