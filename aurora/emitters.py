@@ -74,8 +74,25 @@ class Emitters:
 	def get_alphaH(self):
 		self.alphaH = ct.alphaH.to('cm3/s')*(self.temp.to('K').value / 1.0e4)**-0.845
 
+    # Retain only line centers/broadenings for particles in this group,
+    # arranged in a matrix where each row is a particle, and columns
+    # will serve to store fluxes at each of the cube spectral channels, e.g,
+    # with n particles centered at l1, l2 ..., ln, line_center is:
+    # [ l1 l1 l1 ... l1
+    #   l2 l2 l2 ... l2
+    #   .  .  .  ...
+    #   .  .  .  ...
+    #   ln ln ln ... ln]
+	def get_vect_lines(self, n_ch):
+		line_center = np.transpose(np.tile(self.vz, (n_ch, 1)))
+		line_sigma = np.transpose(np.tile(self.dispersion, (n_ch, 1)))
+		line_flux = np.transpose(np.tile(self.Halpha_lum, (n_ch, 1)))
+		return line_center, line_sigma, line_flux
 
-
+	def get_vect_channels(self, channels, width, n_ch):
+		channel_center = np.tile(channels, (self.N, 1))
+		channel_width = np.tile(width, (self.N, n_ch))
+		return channel_center, channel_width
 
 
 

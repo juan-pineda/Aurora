@@ -161,13 +161,30 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     em.get_luminosity()
     em.get_vel_dispersion()
 
-    # Flux in units of [erg/s/pc^2]
-    Halpha_flux = em.Halpha_lum / spectrom.pixsize.to('pc')**2
-
     x, y, index = spectrom.position_in_pixels(em.x,em.y)
 
 	# scale to which each particle belongs according to its smoothing lenght
     scale = np.digitize(em.smooth.to('kpc'), 1.1 * run.fft_hsml_limits.to('kpc'))
+
+    line_center, line_sigma, line_flux = em.get_vect_lines(n_ch)
+    channel_center, channel_width = em.get_vect_channels(spectrom.vel_channels, spectrom.velocity_sampl, n_ch)
+
+    ### Fluxes can reach E+41, this goes to inf
+    ### This has to do with pynbody returning a float32 quantity somewhere
+    line_flux = line_flux * 1e-16
+
+    # Spectral convolution
+    if(spectrom.spectral_res > 0):
+        psf_fwhm = ct.c/spectrom.spectral_res
+        psf_sigma = psf_fwhm / ct.fwhm_sigma
+        line_sigma = np.sqrt(line_sigma**2+psf_sigma**2)
+
+    # Integrated flux inside each velocity channel given its position and width
+    flux_in_channels = int_gaussian_with_units(channel_center, channel_width, line_center,
+        line_sigma) * line_flux
+
+    # Divide by the effective channel width
+    flux_in_channels = flux_in_channels.to('erg s^-1').value / spectrom.velocity_sampl.to('km s^-1').value / spectrom.pixsize.to('pc').value**2
 
     # Compute the fluxes scale by scale
     for i in np.unique(scale):
@@ -177,34 +194,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         # Unique indices (pixels) to which particles in this group contribute
         unique_val, unique_ind = np.unique(index[ok_level], return_index=True)
 
-        # Retain only line centers/broadenings for particles in this group,
-        # arranged in a matrix where each row is a particle, and columns
-        # will serve to store fluxes at each of the cube spectral channels, e.g,
-        # with n particles centered at l1, l2 ... Halpha_obs_level is:
-        # [ l1 l1 l1 ... l1
-        #   l2 l2 l2 ... l2
-        #   .  .  .  ...
-        #   .  .  .  ...
-        #   ln ln ln ... ln]
-
-        line_center = np.transpose(np.tile(em.vz[ok_level], (n_ch, 1)))
-        line_sigma = np.transpose(np.tile(em.dispersion[ok_level], (n_ch, 1)))
-        line_flux = np.transpose(np.tile(Halpha_flux[ok_level], (n_ch, 1)))
-
-        # Spectral convolution
-        if(spectrom.spectral_res > 0):
-            psf_fwhm = c/spectrom.spectral_res
-            psf_sigma = psf_fwhm / ct.fwhm_sigma
-            line_sigma = np.sqrt(line_sigma**2+psf_sigma**2)
-
-        channel_center = np.tile(spectrom.vel_channels, (nok_level, 1))
-        channel_width = np.tile(spectrom.velocity_sampl, (nok_level, n_ch))
-        # Integrated flux inside each velocity channel given its position and width
-        flux_in_channels = int_gaussian_with_units(channel_center, channel_width, line_center, 
-            line_sigma) * line_flux
-
-        # Divide by the effective channel width
-        eff_flux = flux_in_channels.to('erg s^-1 pc^-2').value / spectrom.velocity_sampl.to('km s^-1').value
+        eff_flux = flux_in_channels[ok_level]
 
         # Sum all the lines for a given index
         for j in range(unique_val.size):
