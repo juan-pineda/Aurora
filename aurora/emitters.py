@@ -31,7 +31,7 @@ class Emitters:
 	def get_luminosity(self):
 		self.get_alphaH()
 		Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH 
-		self.Halpha_lum = Halpha_lum.to('erg cm AA**-1 s**-1')
+		self.Halpha_lum = Halpha_lum.to('erg s**-1')
 				
 	def get_vel_dispersion(self):
 		sigma = np.sqrt(ct.k_B * self.temp / (self.mu * ct.m_p))
