@@ -1,5 +1,6 @@
 import pynbody
 import numpy as np
+from scipy import special
 from astropy import units as unit
 
 from . import constants as ct
@@ -95,5 +96,35 @@ class Emitters:
 		return channel_center, channel_width
 
 
+	def int_gaussian(self, x, dx, mu, sigma):
+	    """
+	    Compute the integral of a normalized gaussian inside some limits.
+	    The center and width
+	
+	    Parameters
+	    ----------
+	    x : float, array
+	        central position of the interval.
+	    dx : float, array
+        width of the interval.
+	    mu: float, array
+	        mean of the gaussian.
+	    sigma: float, array
+	        standard deviation.
+	    """
+
+	    A = special.erf((x+dx/2-mu)/np.sqrt(2)/sigma)
+	    B = special.erf((x-dx/2-mu)/np.sqrt(2)/sigma)
+	    return np.abs((A-B)/2)
+
+	# Notice that, because *int_gaussian* integrates a normalized gaussian,
+	# the units of the input parameters do not affect the result as far as all
+	# of them are the same
+	def int_gaussian_with_units(self, x, dx, mu, sigma):
+	    dx = dx.to(x.unit)
+	    mu = mu.to(x.unit)
+	    sigma = sigma.to(x.unit)
+	    inte = self.int_gaussian(x.value, dx.value, mu.value, sigma.value)
+	    return inte
 
 

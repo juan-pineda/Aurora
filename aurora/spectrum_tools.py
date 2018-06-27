@@ -24,37 +24,6 @@ from . import constants as ct
 from . import emitters as emit
 
 
-def int_gaussian(x, dx, mu, sigma):
-    """
-    Compute the integral of a normalized gaussian inside some limits.
-    The center and width
-
-    Parameters
-    ----------
-    x : float, array
-        central position of the interval.
-    dx : float, array
-        width of the interval.
-    mu: float, array
-        mean of the gaussian.
-    sigma: float, array
-        standard deviation.
-    """
-
-    A = special.erf((x+dx/2-mu)/np.sqrt(2)/sigma)
-    B = special.erf((x-dx/2-mu)/np.sqrt(2)/sigma)
-    return np.abs((A-B)/2)
-
-# Notice that, because *int_gaussian* integrates a normalized gaussian,
-# the units of the input parameters do not affect the result as far as all
-# of them are the same
-def int_gaussian_with_units(x, dx, mu, sigma):
-    dx = dx.to(x.unit)
-    mu = mu.to(x.unit)
-    sigma = sigma.to(x.unit)
-    inte = int_gaussian(x.value, dx.value, mu.value, sigma.value)
-    return inte
-
 def __project_all_chunks(geom, run, spectrom, data_gas):
     """
     Split gas particles into several chunks according to *nvector* and
@@ -176,7 +145,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         line_sigma = np.sqrt(line_sigma**2+psf_sigma**2)
 
     # Integrated flux inside each velocity channel given its position and width
-    flux_in_channels = int_gaussian_with_units(channel_center, channel_width, line_center,
+    flux_in_channels = em.int_gaussian_with_units(channel_center, channel_width, line_center,
         line_sigma) * line_flux
 
     # Divide by the effective channel width
