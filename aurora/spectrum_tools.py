@@ -169,10 +169,6 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     line_center, line_sigma, line_flux = em.get_vect_lines(n_ch)
     channel_center, channel_width = em.get_vect_channels(spectrom.vel_channels, spectrom.velocity_sampl, n_ch)
 
-    ### Fluxes can reach E+41, this goes to inf
-    ### This has to do with pynbody returning a float32 quantity somewhere
-    line_flux = line_flux * 1e-16
-
     # Spectral convolution
     if(spectrom.spectral_res > 0):
         psf_fwhm = ct.c/spectrom.spectral_res
@@ -185,7 +181,6 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
 
     # Divide by the effective channel width
     flux_in_channels = flux_in_channels.to('erg s^-1').value / spectrom.velocity_sampl.to('km s^-1').value / spectrom.pixsize.to('pc').value**2
-
     # Compute the fluxes scale by scale
     for i in np.unique(scale):
         ok_level = np.where(scale == i)[0]
