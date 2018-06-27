@@ -85,7 +85,6 @@ def spectrom_mock(ConfigFile):
     # > Read the snapshot
     # > Set geometrical orientation and retain only the desired gas particles
     geom, run, spectrom = config.get_allinput(ConfigFile)
-    cube_side, n_ch = spectrom.cube_dims()
     data = snap.read_snap(run.input_file)
     data_gas = snap.set_snapshots_ready(geom, run, data)[0]
     del data
