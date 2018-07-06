@@ -165,9 +165,12 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         eff_flux = eff_flux[unique_ind, :]
         # Insert the line fluxes in the right positions at the right scale
 
+        print(len(ok_level[unique_ind]),(np.transpose(eff_flux)).shape)
+        print(x[np.min(ok_level[unique_ind])],y[np.min(ok_level[unique_ind])],cube.shape)
+		
         cube[:, y[ok_level[unique_ind]],
              x[ok_level[unique_ind]], i] += np.transpose(eff_flux)
-
+        print("aja... \n")
     return cube
 
 

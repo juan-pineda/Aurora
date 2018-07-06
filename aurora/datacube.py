@@ -147,33 +147,42 @@ class DatacubeObj():
         spectrom.channel_ref = int(spectrom.spectral_dim/2)
 
     def intensity_map(self):
-        ins = self.cube.sum(axis=0) * self.velocity_sampl.to('km s-1').value
-        return ins
+        self.fluxmap = self.cube.sum(axis=0) * self.velocity_sampl.to('km s-1').value
 
-    def velocity_map(self, ins=None):
-        if ins == None:
-            ins = self.intensity_map()
-        velmap = np.zeros(ins.shape)
+    def velocity_map(self):
+        if not hasattr(self,"fluxmap"):
+            self.intensity_map()
+        velmap = np.zeros(self.fluxmap.shape)
         for i in range(self.channels.size):
             velmap = velmap + \
                 self.cube[i, :, :] * self.channels[i] * \
                 self.velocity_sampl.to('km s-1').value
-        velmap = velmap / ins
-        return velmap
+        self.velmap = velmap / self.fluxmap
 
-    def dispersion_map(self, ins=None, velmap=None):
-        if ins == None:
-            ins = self.intensity_map()
-        if velmap == None:
-            velmap = self.velocity_map(ins)
-        disper = np.zeros(ins.shape)
+    def dispersion_map(self):
+        if not hasattr(self,"fluxmap"):
+            self.intensity_map()
+        if not hasattr(self,"velmap"):
+            self.velocity_map()
+        disper = np.zeros(self.fluxmap.shape)
         for i in range(self.channels.size):
-            disper += self.cube[i, :, :]*(self.channels[i] - velmap)**2
-        disper = np.sqrt(disper * self.velocity_sampl.to('km s-1').value / ins)
-        return disper
+            disper += self.cube[i, :, :]*(self.channels[i] - self.velmap)**2
+        self.dispmap = np.sqrt(disper * self.velocity_sampl.to('km s-1').value / self.fluxmap)
 
     def all_maps(self):
-        ins = self.intensity_map()
-        velmap = self.velocity_map(ins)
-        disper = self.dispersion_map(ins, velmap)
-        return ins, velmap, disper
+        self.intensity_map()
+        self.velocity_map()
+        self.dispersion_map()
+
+
+    def clean_lowflux(self, thresh = 11):
+        zeros = (np.log10(np.max(self.fluxmap)) - np.log10(self.fluxmap) > thresh)
+        self.fluxmap[zeros] = np.nan
+        self.velmap[zeros] = np.nan
+        self.dispmap[zeros] = np.nan
+
+
+
+
+
+
