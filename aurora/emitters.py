@@ -17,21 +17,27 @@ class Emitters:
 		self.x = np.array(data_gas['x'].in_units('kpc'))*unit.kpc
 		self.y = np.array(data_gas['y'].in_units('kpc'))*unit.kpc
 		self.z = np.array(data_gas['z'].in_units('kpc'))*unit.kpc
-
 		self.dens = np.array(data_gas['rho'].in_units('g cm**-3'))*unit.g/unit.cm**3
-
-# Next block may replace former line for tests cutting high-density particles
-#
-#		densi = np.array(data_gas['rho'].in_units('g cm**-3'))*unit.g/unit.cm**3
-#		tokill = (densi.to("6.77e-23 g cm**-3").value > 10**1.5)
-#		print("To kill :  ",tokill.sum())
-#		self.dens = np.array(data_gas['rho'].in_units('g cm**-3'))
-#		self.dens[tokill] = np.min(self.dens) / 10
-#		self.dens = self.dens*unit.g/unit.cm**3
-
 		self.vz = np.array(data_gas['vz'].in_units('cm s**-1'))*unit.cm/unit.s
 		self.smooth = np.array(data_gas['smooth'].in_units('kpc'))*unit.kpc
 		self.u = np.array(data_gas['u'].in_units('cm**2 s**-2'))*unit.cm**2/unit.s**2
+
+	def density_cut(self, density_cut="Not"):
+		if density_cut=="Not":
+			print("Nothing to cut")
+		elif density_cut=="polytrope":
+			print("polytropic cut to be implemented")
+			tokill = (np.log10(self.dens.to("6.77e-23 g cm**-3").value) > np.log10(self.temp.to("K").value) - 3.5 )
+			self.dens = self.dens.to('g cm**-3').value
+			self.dens[tokill] = np.min(self.dens) / 10
+			self.dens = self.dens*unit.g/unit.cm**3
+		else:
+			thresh = 10**np.float(density_cut)
+			print("Cutting a threshold: ",thresh)
+			tokill = (self.dens.to("6.77e-23 g cm**-3").value > thresh)
+			self.dens = self.dens.to('g cm**-3').value
+			self.dens[tokill] = np.min(self.dens) / 10
+			self.dens = self.dens*unit.g/unit.cm**3
 
 
 	# Derived physical quantities
@@ -41,13 +47,28 @@ class Emitters:
 		self.get_mu()
 		self.get_dens_ion()
 
-	def get_luminosity(self):
+	def get_luminosity(self, mode, density_cut="Not"):
 		self.get_alphaH()
-		Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH 
-# Next line may replace former one for testing a linear luminosity-density relation
-#		Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH / (self.dens_ion.value)
+		if mode == "square":
+			Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH 
+		elif mode == "linear":
+			Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH / (self.dens_ion.value)
+		elif mode == "root":
+			Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH / (self.dens_ion.value**1.5)
 		self.Halpha_lum = Halpha_lum.to('erg s**-1')
-				
+
+		if density_cut=="Not":
+			print("Nothing to cut")
+		elif density_cut=="polytrope":
+			print("polytropic cut to be implemented")
+			tokill = (np.log10(self.dens.to("6.77e-23 g cm**-3").value) > np.log10(self.temp.to("K").value) - 3.5 )
+			self.Halpha_lum[tokill] = 0 * unit.erg * unit.s**-1
+		else:
+			thresh = 10**np.float(density_cut)
+			print("Cutting a threshold: ",thresh)
+			tokill = (self.dens.to("6.77e-23 g cm**-3").value > thresh)
+			self.Halpha_lum[tokill] = 0 * unit.erg * unit.s**-1
+
 	def get_vel_dispersion(self):
 		sigma = np.sqrt(ct.k_B * self.temp / (self.mu * ct.m_p))
 		self.dispersion = sigma.to('cm s**-1')

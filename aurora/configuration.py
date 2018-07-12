@@ -250,6 +250,8 @@ class SpectromObj():
             spec_conf, 'spectrom', 'kernel_scale', float)
         self.oversampling = read_var(
             spec_conf, 'spectrom', 'oversampling', int)
+        self.lum_dens_rel = read_var(spec_conf, 'spectrom', 'lum_dens_relation', str)
+        self.density_cut = read_var(spec_conf, 'spectrom', 'density_cut', str)
 
     def cube_dims(self):
         """

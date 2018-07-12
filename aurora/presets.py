@@ -35,7 +35,10 @@ default_values['spectrom'] = {
     'oversampling': [1],
     'sigma_cont': [0.0],
     'redshift_ref': [0.],
-    'kernel_scale': [1.]
+    'kernel_scale': [1.],
+    'lum_dens_relation': ["square"],
+    'density_cut': ["Not"]
+
 }
 
 
