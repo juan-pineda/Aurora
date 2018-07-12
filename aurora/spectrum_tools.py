@@ -72,7 +72,7 @@ def get_cube_in_parallel(geom, run, spectrom, data_gas, nchunk):
         return sum(cube_list)
     else:
         logging.warning('Not enough RAM left in your device for this operation in parallel.')
-        logging.warning(f'Needed {memory_needed_ncores}Mb, you have {memory_available}Mb Free.')
+        logging.info('Needed {memory_needed_ncores}Mb, you have {memory_available}Mb Free.')
         logging.info('Using a single cpu mode...')
         return get_cube_in_sequential(geom, run, spectrom, data_gas, nchunk)
 
@@ -165,12 +165,8 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         eff_flux = eff_flux[unique_ind, :]
         # Insert the line fluxes in the right positions at the right scale
 
-        print(len(ok_level[unique_ind]),(np.transpose(eff_flux)).shape)
-        print(x[np.min(ok_level[unique_ind])],y[np.min(ok_level[unique_ind])],cube.shape)
-		
         cube[:, y[ok_level[unique_ind]],
              x[ok_level[unique_ind]], i] += np.transpose(eff_flux)
-        print("aja... \n")
     return cube
 
 
@@ -185,12 +181,12 @@ def __cube_convolution(geom, run, spectrom, cube):
     """
     cube_side, n_ch = spectrom.cube_dims()
     for i in range(run.nfft):
-        logging.info(f"Preparing for spatial smoothing, kernel = {round(run.fft_hsml_limits[i].value*1000, 1)} pc")
+        logging.info("Preparing for spatial smoothing, kernel = {round(run.fft_hsml_limits[i].value*1000, 1)} pc")
         sys.stdout.flush()
         # Kernel smoothing
         scale_fwhm = (run.fft_hsml_limits[i] / spectrom.pixsize).decompose().value
         scale_sigma = spectrom.kernel_scale * scale_fwhm / ct.fwhm_sigma
-        logging.info(f"Size of the kernel in pixels = {round(scale_sigma, 1)}")
+        logging.info("Size of the kernel in pixels = {round(scale_sigma, 1)}")
         # Enlarge the kernel adding the effect of the PSF
         if(spectrom.spatial_res_kpc > 0):
             logging.info(" (Including the effect of the PSF as well)")
@@ -198,9 +194,9 @@ def __cube_convolution(geom, run, spectrom, cube):
             psf_fwhm = spectrom.spatial_res_kpc.to(
                 'pc').value / spectrom.pixsize.to('pc').value
             psf_sigma = psf_fwhm / ct.fwhm_sigma
-            logging.info(f"Size of the PSF in pixels = {round(psf_sigma, 1)}")
+            logging.info("Size of the PSF in pixels = {round(psf_sigma, 1)}")
             scale_sigma = np.sqrt(scale_sigma**2+psf_sigma**2)
-            logging.info(f"Combination kernel + PSF in pixels = {round(scale_sigma, 1)}")
+            logging.info("Combination kernel + PSF in pixels = {round(scale_sigma, 1)}")
         if (scale_sigma <= 0.5):
             logging.info("-- Small kernel -> skip convolution")
             sys.stdout.flush()

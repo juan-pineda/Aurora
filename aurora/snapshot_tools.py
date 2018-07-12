@@ -10,7 +10,7 @@ from . import constants as ct
 # Reads the simulation snapshot file
 def read_snap(input_file):
     try:
-        logging.info(f"// Pynbody -> Reading file {input_file}")
+        logging.info("// Pynbody -> Reading file {input_file}")
         sys.stdout.flush()
         data = pynbody.load(input_file)
         return data
@@ -24,7 +24,7 @@ def filter_array(data, prop, mini, maxi, units):
     if type(prop) == list:
         output = data
         for i in range(len(prop)):
-            logging.info(f"Filtering property: {prop[i]}, with min/max: {mini[i]},{maxi[i]}, in units {units[i]}")
+            logging.info("Filtering property: {prop[i]}, with min/max: {mini[i]},{maxi[i]}, in units {units[i]}")
             output = filter_array(output, prop[i], mini[i], maxi[i], units[i])
     else:
         ok = np.where((data[prop].in_units(units) >= mini) & (data[prop].in_units(units) <= maxi))
@@ -50,7 +50,7 @@ def set_hsml_limits(run, data_gas):
     else:
         logging.error('No gas elements in this snapshot')
         sys.exit()
-    logging.info(f'// {str(run.nfft).strip()} levels for adaptive smoothing')
+    logging.info('// {str(run.nfft).strip()} levels for adaptive smoothing')
 
 # Fix center and orientation of the disc, and filter out data if specified
 def set_snapshots_ready(geom, run, data):
@@ -67,8 +67,8 @@ def set_snapshots_ready(geom, run, data):
         data.physical_units(velocity='cm s**-1',
                             distance='kpc', mass='1.99e+43 g')
         # Set the (inclination,position angle) of the disc
-        logging.info(f'// Inclination: Rotating along y {str(geom.theta).strip()}')
-        logging.info(f'// Positon angle: Rotating along z {str(geom.phi).strip()}')
+        logging.info('// Inclination: Rotating along y {str(geom.theta).strip()}')
+        logging.info('// Positon angle: Rotating along z {str(geom.phi).strip()}')
         sys.stdout.flush()
         tr = data_ref.rotate_y(geom.theta.value)
         tr.apply_to(data)
@@ -84,8 +84,8 @@ def set_snapshots_ready(geom, run, data):
         data.physical_units(velocity='cm s**-1',
                             distance='kpc', mass='1.99e+43 g')
         # Set the (inclination,position angle) of the disc
-        logging.info(f'// Inclination: Rotating along y {str(geom.theta).strip()}')
-        logging.info(f'// Positon angle: Rotating along z {str(geom.phi).strip()}')
+        logging.info('// Inclination: Rotating along y {str(geom.theta).strip()}')
+        logging.info('// Positon angle: Rotating along z {str(geom.phi).strip()}')
         sys.stdout.flush()
         data.rotate_y(geom.theta.value)
         data.rotate_z(geom.phi.value)
@@ -103,9 +103,9 @@ def set_snapshots_ready(geom, run, data):
     nstars = len(data_star)
     ngas = len(data_gas)
     ndm = len(data_dm)
-    logging.info(f'// n_stars   -> {nstars}')
-    logging.info(f'// n_gas     -> {ngas}')
-    logging.info(f'// n_dm      -> {ndm}')
+    logging.info('// n_stars   -> {nstars}')
+    logging.info('// n_gas     -> {ngas}')
+    logging.info('// n_dm      -> {ndm}')
     return [data_gas, data_star, data_dm]
 
 

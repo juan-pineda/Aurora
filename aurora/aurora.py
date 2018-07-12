@@ -120,7 +120,7 @@ def spectrom_mock(ConfigFile):
         logging.info('// Noise injection')
         cube_noise = cube + np.random.normal(0.0, spectrom.sigma_cont, cube.shape)
 
-    logging.info(f'Created file {run.output_name}')
+    logging.info('Created file {run.output_name}')
     so.writing_datacube(geom, spectrom, run, cube)
 
 

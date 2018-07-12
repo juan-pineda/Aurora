@@ -17,10 +17,22 @@ class Emitters:
 		self.x = np.array(data_gas['x'].in_units('kpc'))*unit.kpc
 		self.y = np.array(data_gas['y'].in_units('kpc'))*unit.kpc
 		self.z = np.array(data_gas['z'].in_units('kpc'))*unit.kpc
+
 		self.dens = np.array(data_gas['rho'].in_units('g cm**-3'))*unit.g/unit.cm**3
+
+# Next block may replace former line for tests cutting high-density particles
+#
+#		densi = np.array(data_gas['rho'].in_units('g cm**-3'))*unit.g/unit.cm**3
+#		tokill = (densi.to("6.77e-23 g cm**-3").value > 10**1.5)
+#		print("To kill :  ",tokill.sum())
+#		self.dens = np.array(data_gas['rho'].in_units('g cm**-3'))
+#		self.dens[tokill] = np.min(self.dens) / 10
+#		self.dens = self.dens*unit.g/unit.cm**3
+
 		self.vz = np.array(data_gas['vz'].in_units('cm s**-1'))*unit.cm/unit.s
 		self.smooth = np.array(data_gas['smooth'].in_units('kpc'))*unit.kpc
 		self.u = np.array(data_gas['u'].in_units('cm**2 s**-2'))*unit.cm**2/unit.s**2
+
 
 	# Derived physical quantities
 	def get_state(self):
@@ -32,6 +44,8 @@ class Emitters:
 	def get_luminosity(self):
 		self.get_alphaH()
 		Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH 
+# Next line may replace former one for testing a linear luminosity-density relation
+#		Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH / (self.dens_ion.value)
 		self.Halpha_lum = Halpha_lum.to('erg s**-1')
 				
 	def get_vel_dispersion(self):
