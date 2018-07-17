@@ -27,7 +27,9 @@ class Emitters:
 			print("Nothing to cut")
 		elif density_cut=="polytrope":
 			print("polytropic cut to be implemented")
-			tokill = (np.log10(self.dens.to("6.77e-23 g cm**-3").value) > np.log10(self.temp.to("K").value) - 3.5 )
+			logdens = np.log10(self.dens.to("6.77e-23 g cm**-3").value)
+			logtemp = np.log10(self.temp.to("K").value)
+			tokill = ((logdens > logtemp - 3.5) & (logdens > 0.7) )
 			self.dens = self.dens.to('g cm**-3').value
 			self.dens[tokill] = np.min(self.dens) / 10
 			self.dens = self.dens*unit.g/unit.cm**3
@@ -61,7 +63,9 @@ class Emitters:
 			print("Nothing to cut")
 		elif density_cut=="polytrope":
 			print("polytropic cut to be implemented")
-			tokill = (np.log10(self.dens.to("6.77e-23 g cm**-3").value) > np.log10(self.temp.to("K").value) - 3.5 )
+			logdens = np.log10(self.dens.to("6.77e-23 g cm**-3").value)
+			logtemp = np.log10(self.temp.to("K").value)
+			tokill = ((logdens > logtemp - 3.5) & (logdens > 0.7) )
 			self.Halpha_lum[tokill] = 0 * unit.erg * unit.s**-1
 		else:
 			thresh = 10**np.float(density_cut)
