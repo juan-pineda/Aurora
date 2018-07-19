@@ -180,7 +180,7 @@ class GeometryObj():
         return wavelength
 
     def wavelength_to_vel(self, wavelength):
-        vel = ct.c('km s-1') * wavelength.to('angstrom').value / (
+        vel = ct.c.to('km s-1') * wavelength.to('angstrom').value / (
             self.lambda_em.to('angstrom').value)
         return vel
 
@@ -268,6 +268,14 @@ class SpectromObj():
         y = (y / self.pixsize).decompose()
         x = (np.floor(x + cube_side / 2)).astype(int)
         y = (np.floor(y + cube_side / 2)).astype(int)
+
+        # Due to errors in float claculations, eventually one particle may lie
+        # just outside of the box
+        x[x == cube_side] = (cube_side -1)
+        x[x == -1] = 0
+        y[y == cube_side] = (cube_side -1)
+        y[y == -1] = 0
+
         index = x + cube_side * y
         return x,y,index
 
