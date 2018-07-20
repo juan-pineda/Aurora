@@ -12,7 +12,7 @@ eff_recomb_rate_halpha = 1.16e-16 / unit.s
 # Hydrogen cosmological fraction
 Xh = 0.76
 # Solar mass
-M_sun = const.M_sun.to('g')
+M_sun = const.M_sun.to("g")
 # Myear [s]
 myr = 1.0E6 * 365.0 * 24.0 * 3600.0 * unit.s
 # Solar O/H ratio
@@ -24,12 +24,12 @@ kMW_Ha = 2.517
 # Hydrogen recombination rate
 alphaH = 2.59e-13 * np.power(unit.cm, 3) / unit.s
 # Physical constants defined in CGS system
-h = const.h.to('erg s')
-c = const.c.to('cm/s')
-m_p = const.m_p.to('g')
-k_B = const.k_B.to('erg/K')
-kpc = const.kpc.to('cm')
-G = const.G.to('cm3/(g s2)')
+h = const.h.to("erg s")
+c = const.c.to("cm/s")
+m_p = const.m_p.to("g")
+k_B = const.k_B.to("erg/K")
+kpc = const.kpc.to("cm")
+G = const.G.to("cm3/(g s2)")
 # Factor to go from FWHM to std dev
 fwhm_sigma = (2.0 * math.sqrt(2.0 * math.log(2.0)))
 ## --------- ##

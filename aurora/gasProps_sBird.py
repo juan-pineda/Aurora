@@ -52,7 +52,7 @@ class GasProperties(object):
         self.redshift_coverage = True
         if redshift > zz[-1]:
             self.redshift_coverage = False
-            logging.warning("no self-shielding at z=", redshift)
+            logging.warning(f"no self-shielding at z=", redshift)
         else:
             gamma_inter = intp.interp1d(zz, gamma_UVB)
             gray_inter = intp.interp1d(zz, gray_opac)

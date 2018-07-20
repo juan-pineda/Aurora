@@ -82,18 +82,18 @@ class RunObj():
         run_config = configparser.SafeConfigParser({}, allow_no_value=True)
         run_config.read(ConfigFile)
 
-        self.input_file = read_var(run_config, 'run', 'input_file', str)
-        self.output_file = read_var(run_config, 'run', 'output_file', str)
-        self.output_dir = read_var(run_config, 'run', 'custom_dir', str)
-        self.instrument = read_var(run_config, 'run', 'instrument', str)
-        self.nvector = read_var(run_config, 'run', 'nvector', int)
-        self.ncpu = read_var(run_config, 'run', 'ncpu', int)
-        self.overwrite = read_var(run_config, 'run', 'overwrite', bool)
-        self.simulation_id = read_var(run_config, 'run', 'simulation_id', str)
-        self.snapshot_id = read_var(run_config, 'run', 'snapshot_id', str)
-        self.reference_id = read_var(run_config, 'run', 'reference_id', str)
-        self.nfft = read_var(run_config, 'run', 'nfft', int)
-        self.fft_hsml_min = read_var(run_config, 'run', 'fft_hsml_min', float,
+        self.input_file = read_var(run_config, "run", "input_file", str)
+        self.output_file = read_var(run_config, "run", "output_file", str)
+        self.output_dir = read_var(run_config, "run", "custom_dir", str)
+        self.instrument = read_var(run_config, "run", "instrument", str)
+        self.nvector = read_var(run_config, "run", "nvector", int)
+        self.ncpu = read_var(run_config, "run", "ncpu", int)
+        self.overwrite = read_var(run_config, "run", "overwrite", bool)
+        self.simulation_id = read_var(run_config, "run", "simulation_id", str)
+        self.snapshot_id = read_var(run_config, "run", "snapshot_id", str)
+        self.reference_id = read_var(run_config, "run", "reference_id", str)
+        self.nfft = read_var(run_config, "run", "nfft", int)
+        self.fft_hsml_min = read_var(run_config, "run", "fft_hsml_min", float,
                                      unit.pc)
 
 
@@ -115,44 +115,44 @@ class GeometryObj():
         g_conf = configparser.SafeConfigParser(allow_no_value=True)
         g_conf.read(ConfigFile)
 
-        self.redshift = read_var(g_conf, 'geometry', 'redshift', float)
-        self.dl = read_var(g_conf, 'geometry', 'dist_lum', float, unit.Mpc)
+        self.redshift = read_var(g_conf, "geometry", "redshift", float)
+        self.dl = read_var(g_conf, "geometry", "dist_lum", float, unit.Mpc)
         self.dist_angular = read_var(
-            g_conf, 'geometry', 'dist_angular', float, unit.Mpc)
+            g_conf, "geometry", "dist_angular", float, unit.Mpc)
         self.lambda_em = read_var(
-            g_conf, 'geometry', 'lambda_em', float, unit.angstrom)
-        self.theta = read_var(g_conf, 'geometry', 'theta', float, unit.deg)
-        self.phi = read_var(g_conf, 'geometry', 'phi', float, unit.deg)
-        self.barycenter = read_var(g_conf, 'geometry', 'barycenter', bool)
-        self.centerx = read_var(g_conf, 'geometry', 'centerx', float, unit.kpc)
-        self.centery = read_var(g_conf, 'geometry', 'centery', float, unit.kpc)
-        self.centerz = read_var(g_conf, 'geometry', 'centerz', float, unit.kpc)
-        self.reference = read_var(g_conf, 'geometry', 'reference_frame', str)
+            g_conf, "geometry", "lambda_em", float, unit.angstrom)
+        self.theta = read_var(g_conf, "geometry", "theta", float, unit.deg)
+        self.phi = read_var(g_conf, "geometry", "phi", float, unit.deg)
+        self.barycenter = read_var(g_conf, "geometry", "barycenter", bool)
+        self.centerx = read_var(g_conf, "geometry", "centerx", float, unit.kpc)
+        self.centery = read_var(g_conf, "geometry", "centery", float, unit.kpc)
+        self.centerz = read_var(g_conf, "geometry", "centerz", float, unit.kpc)
+        self.reference = read_var(g_conf, "geometry", "reference_frame", str)
 
         self.gas_minmax_keys = read_var(
-            g_conf, 'geometry', 'gas_minmax_keys', str)
+            g_conf, "geometry", "gas_minmax_keys", str)
         self.gas_min_values = read_var(
-            g_conf, 'geometry', 'gas_min_values', str)
+            g_conf, "geometry", "gas_min_values", str)
         self.gas_max_values = read_var(
-            g_conf, 'geometry', 'gas_max_values', str)
+            g_conf, "geometry", "gas_max_values", str)
 
         # Filter the gas particles according to the specified properties and boundaries (if any)
-        if(self.gas_minmax_keys != ''):
+        if(self.gas_minmax_keys != ""):
             self.gas_minmax_keys = re.split(
-                ',|;', ''.join(self.gas_minmax_keys.split()))
-        if(self.gas_min_values != ''):
+                ",|;", "".join(self.gas_minmax_keys.split()))
+        if(self.gas_min_values != ""):
             self.gas_min_values = (np.array(
-                re.split(',|;', ''.join(self.gas_min_values.split())))).astype(np.float)
+                re.split(",|;", "".join(self.gas_min_values.split())))).astype(np.float)
             if(len(self.gas_minmax_keys) != len(self.gas_min_values)):
                 logging.error(
-                    'The number of elements in gas_minmax_keys and gas_min_values should be equal')
+                    "The number of elements in gas_minmax_keys and gas_min_values should be equal")
                 sys.exit()
-        if(self.gas_max_values != ''):
+        if(self.gas_max_values != ""):
             self.gas_max_values = (np.array(
-                re.split(',|;', ''.join(self.gas_max_values.split())))).astype(np.float)
+                re.split(",|;", "".join(self.gas_max_values.split())))).astype(np.float)
             if(len(self.gas_minmax_keys) != len(self.gas_max_values)):
                 logging.error(
-                    'The number of elements in gas_minmax_keys and gas_max_values should be equal')
+                    "The number of elements in gas_minmax_keys and gas_max_values should be equal")
                 sys.exit()
 
 # NOTA MENTAL!
@@ -163,25 +163,25 @@ class GeometryObj():
             self.dl = cosmo.luminosity_distance(self.redshift)
             self.lambda_em = (1 + self.redshift) * ct.Halpha0
             self.dist_angular = cosmo.kpc_proper_per_arcmin(self.redshift).to(
-                'Mpc / rad').value * unit.Mpc
+                "Mpc / rad").value * unit.Mpc
 
     def kpc_to_arcsec(self, length):
-        length_arcsec = length.to('pc').value/self.dist_angular.to('pc').value
+        length_arcsec = length.to("pc").value/self.dist_angular.to("pc").value
         length_arcsec = np.rad2deg(length_arcsec) * 3600 * unit.arcsec
         return length_arcsec
 
     def arcsec_to_kpc(self, angle):
-        length = angle.to('rad').value * self.dist_angular.to('kpc')
+        length = angle.to("rad").value * self.dist_angular.to("kpc")
         return length
 
     def vel_to_wavelength(self, vel):
-        wavelength = self.lambda_em * vel.to('km s-1').value / (
-            ct.c.to('km s-1').value)
+        wavelength = self.lambda_em * vel.to("km s-1").value / (
+            ct.c.to("km s-1").value)
         return wavelength
 
     def wavelength_to_vel(self, wavelength):
-        vel = ct.c.to('km s-1') * wavelength.to('angstrom').value / (
-            self.lambda_em.to('angstrom').value)
+        vel = ct.c.to("km s-1") * wavelength.to("angstrom").value / (
+            self.lambda_em.to("angstrom").value)
         return vel
 
 
@@ -201,57 +201,57 @@ class SpectromObj():
 
         spec_conf = configparser.SafeConfigParser(allow_no_value=True)
         spec_conf.read(ConfigFile)
-        self.presets = read_var(spec_conf, 'spectrom', 'presets', str)
+        self.presets = read_var(spec_conf, "spectrom", "presets", str)
 
         if self.presets in presets.Instruments.keys():
-            self.spatial_sampl = presets.Instruments[self.presets]['spatial_sampl']
+            self.spatial_sampl = presets.Instruments[self.presets]["spatial_sampl"]
             self.spatial_sampl = float(self.spatial_sampl) * unit.arcsec
-            self.spectral_sampl = presets.Instruments[self.presets]['spectral_sampl']
+            self.spectral_sampl = presets.Instruments[self.presets]["spectral_sampl"]
             self.spectral_sampl = float(self.spectral_sampl) * unit.angstrom
-            self.spatial_res = presets.Instruments[self.presets]['spatial_res']
+            self.spatial_res = presets.Instruments[self.presets]["spatial_res"]
             self.spatial_res = float(self.spatial_res) * unit.arcsec
-            self.spectral_res = presets.Instruments[self.presets]['spectral_res']
+            self.spectral_res = presets.Instruments[self.presets]["spectral_res"]
             self.spectral_res = float(self.spectral_res)
-            self.spatial_dim = presets.Instruments[self.presets]['spatial_dim']
+            self.spatial_dim = presets.Instruments[self.presets]["spatial_dim"]
             self.spatial_dim = int(self.spatial_dim)
-            self.spectral_dim = presets.Instruments[self.presets]['spectral_dim']
+            self.spectral_dim = presets.Instruments[self.presets]["spectral_dim"]
             self.spectral_dim = int(self.spectral_dim)
-            self.sigma_cont = presets.Instruments[self.presets]['target_snr']
+            self.sigma_cont = presets.Instruments[self.presets]["target_snr"]
             self.sigma_cont = float(self.sigma_cont)
         else:
             self.spatial_sampl = read_var(
-                spec_conf, 'spectrom', 'spatial_sampl', float, unit.arcsec)
+                spec_conf, "spectrom", "spatial_sampl", float, unit.arcsec)
             self.spectral_sampl = read_var(
-                spec_conf, 'spectrom', 'spectral_sampl', float, unit.angstrom)
+                spec_conf, "spectrom", "spectral_sampl", float, unit.angstrom)
             self.spatial_res = read_var(
-                spec_conf, 'spectrom', 'spatial_res', float, unit.arcsec)
+                spec_conf, "spectrom", "spatial_res", float, unit.arcsec)
             self.spectral_res = read_var(
-                spec_conf, 'spectrom', 'spectral_res', float)
+                spec_conf, "spectrom", "spectral_res", float)
             self.spatial_dim = read_var(
-                spec_conf, 'spectrom', 'spatial_dim', int)
+                spec_conf, "spectrom", "spatial_dim", int)
             self.spectral_dim = read_var(
-                spec_conf, 'spectrom', 'spectral_dim', int)
+                spec_conf, "spectrom", "spectral_dim", int)
             self.sigma_cont = read_var(
-                spec_conf, 'spectrom', 'sigma_cont', float)
+                spec_conf, "spectrom", "sigma_cont", float)
 
         self.redshift_ref = read_var(
-            spec_conf, 'spectrom', 'redshift_ref', float)
-        self.pixsize = read_var(spec_conf, 'spectrom',
-                                'pixsize', float, unit.pc)
+            spec_conf, "spectrom", "redshift_ref", float)
+        self.pixsize = read_var(spec_conf, "spectrom",
+                                "pixsize", float, unit.pc)
         self.velocity_sampl = read_var(
-            spec_conf, 'spectrom', 'velocity_sampl', float, unit.km/unit.s)
+            spec_conf, "spectrom", "velocity_sampl", float, unit.km/unit.s)
         self.fieldofview = read_var(
-            spec_conf, 'spectrom', 'fieldofview', float, unit.kpc)
+            spec_conf, "spectrom", "fieldofview", float, unit.kpc)
         self.velocity_range = read_var(
-            spec_conf, 'spectrom', 'velocity_range', float, unit.km/unit.s)
+            spec_conf, "spectrom", "velocity_range", float, unit.km/unit.s)
         self.spatial_res_kpc = read_var(
-            spec_conf, 'spectrom', 'spatial_res_kpc', float, unit.kpc)
+            spec_conf, "spectrom", "spatial_res_kpc", float, unit.kpc)
         self.kernel_scale = read_var(
-            spec_conf, 'spectrom', 'kernel_scale', float)
+            spec_conf, "spectrom", "kernel_scale", float)
         self.oversampling = read_var(
-            spec_conf, 'spectrom', 'oversampling', int)
-        self.lum_dens_rel = read_var(spec_conf, 'spectrom', 'lum_dens_relation', str)
-        self.density_cut = read_var(spec_conf, 'spectrom', 'density_cut', str)
+            spec_conf, "spectrom", "oversampling", int)
+        self.lum_dens_rel = read_var(spec_conf, "spectrom", "lum_dens_relation", str)
+        self.density_cut = read_var(spec_conf, "spectrom", "density_cut", str)
 
     def cube_dims(self):
         """
@@ -323,7 +323,7 @@ class SpectromObj():
             self.spatial_sampl = geom.kpc_to_arcsec(self.pixsize)
         else:
             if ~np.isnan(self.spatial_sampl):
-                self.pixsize = geom.arcsec_to_kpc(self.spatial_sampl).to('pc')
+                self.pixsize = geom.arcsec_to_kpc(self.spatial_sampl).to("pc")
 
     def check_spatial_res_kpc(self, geom):
         """
@@ -345,16 +345,16 @@ class SpectromObj():
         """
 
         if ~np.isnan(self.fieldofview):
-            self.spatial_dim = int(self.fieldofview.to('pc'
-                                                       ).value / self.pixsize.to('pc').value)
-            self.fieldofview = self.spatial_dim * self.pixsize.to('kpc')
+            self.spatial_dim = int(self.fieldofview.to("pc"
+                                                       ).value / self.pixsize.to("pc").value)
+            self.fieldofview = self.spatial_dim * self.pixsize.to("kpc")
             self.FoV_arcsec = geom.kpc_to_arcsec(self.fieldofview)
         else:
             if ~np.isnan(self.FoV_arcsec):
                 self.fieldofview = geom.arcsec_to_kpc(self.FoV_arcsec)
                 self.check_fieldofview(geom)
             elif ~np.isnan(self.spatial_dim):
-                self.fieldofview = self.spatial_dim * self.pixsize.to('kpc')
+                self.fieldofview = self.spatial_dim * self.pixsize.to("kpc")
                 self.check_fieldofview(geom)
 
     def check_velocity_sampl(self, geom):
@@ -377,8 +377,8 @@ class SpectromObj():
         """
 
         if ~np.isnan(self.velocity_range):
-            self.spectral_dim = int(self.velocity_range.to('km s-1').value / (
-                self.velocity_sampl.to('km s-1').value))
+            self.spectral_dim = int(self.velocity_range.to("km s-1").value / (
+                self.velocity_sampl.to("km s-1").value))
             self.velocity_range = self.spectral_dim * self.velocity_sampl
             self.spectral_range = geom.vel_to_wavelength(self.velocity_range)
         else:
@@ -413,12 +413,12 @@ class SpectromObj():
         self.position_ref = 0. * unit.pc
 
     def get_one_channel(self, index):
-        v_channel = (index - self.channel_ref)*self.velocity_sampl.to('km s-1')
-        return v_channel + self.vel_ref.to('km s-1')
+        v_channel = (index - self.channel_ref)*self.velocity_sampl.to("km s-1")
+        return v_channel + self.vel_ref.to("km s-1")
 
     def get_one_position(self, index):
-        position = (index - self.pixel_ref) * self.pixsize.to('pc')
-        return position + self.position_ref.to('pc')
+        position = (index - self.pixel_ref) * self.pixsize.to("pc")
+        return position + self.position_ref.to("pc")
 
 
 def get_allinput(ConfigFile):
@@ -436,7 +436,7 @@ def get_allinput(ConfigFile):
     # > Parse the input parameters from ConfigFile
     # > Set the output name and check if it has the rights to write it
     if(not os.path.isfile(ConfigFile)):
-        logging.error(f'// {ConfigFile} not found')
+        logging.error(f"// {ConfigFile} not found")
         return
     geom = GeometryObj()
     geom.parse_input(ConfigFile)
@@ -458,48 +458,48 @@ def get_allinput(ConfigFile):
     spectrom.set_reference()
 
     # These prints might go to a file set by the user in the future
-    logging.warning("\n............ConfigFile Warning................")
-    logging.warning("The following vars were NOT passed. Aurora will set them to")
-    logging.warning("default values or will adjust them for self-consistency:")
+    logging.warning(f"\n............ConfigFile Warning................")
+    logging.warning(f"The following vars were NOT passed. Aurora will set them to")
+    logging.warning(f"default values or will adjust them for self-consistency:")
     global missing_params
     logging.warning(missing_params)
 
-    logging.info("\n::::::::::::::::::::::::::::::::::::::::::::::::::::::")
-    logging.info("Aurora is using the following parameters: \n")
+    logging.info(f"\n::::::::::::::::::::::::::::::::::::::::::::::::::::::")
+    logging.info(f"Aurora is using the following parameters: \n")
 
-    logging.info("input file = {run.input_file}")
-    logging.info("output file = {run.output_file}")
-    logging.info("output dir = {run.output_dir}")
-    logging.info("overwrite = {run.overwrite}\n")
+    logging.info(f"input file = {run.input_file}")
+    logging.info(f"output file = {run.output_file}")
+    logging.info(f"output dir = {run.output_dir}")
+    logging.info(f"overwrite = {run.overwrite}\n")
 
-    logging.info("redshift = {geom.redshift}")
-    logging.info("luminosity distance = {geom.dl}")
-    logging.info("angular distance = {geom.dist_angular}")
-    logging.info("redshifted wavelength = {geom.lambda_em}")
-    logging.info("barycenter = {geom.barycenter}")
-    logging.info("theta = {geom.theta}")
-    logging.info("phi = {geom.phi}")
-    logging.info("redshift_ref= {spectrom.redshift_ref}\n")
+    logging.info(f"redshift = {geom.redshift}")
+    logging.info(f"luminosity distance = {geom.dl}")
+    logging.info(f"angular distance = {geom.dist_angular}")
+    logging.info(f"redshifted wavelength = {geom.lambda_em}")
+    logging.info(f"barycenter = {geom.barycenter}")
+    logging.info(f"theta = {geom.theta}")
+    logging.info(f"phi = {geom.phi}")
+    logging.info(f"redshift_ref= {spectrom.redshift_ref}\n")
 
-    logging.info("field of view = {spectrom.fieldofview}")
-    logging.info("pixsize = {spectrom.pixsize}")
-    logging.info("spatial_dim = {spectrom.spatial_dim}")
-    logging.info("spatial_res_kpc = {spectrom.spatial_res_kpc}\n")
+    logging.info(f"field of view = {spectrom.fieldofview}")
+    logging.info(f"pixsize = {spectrom.pixsize}")
+    logging.info(f"spatial_dim = {spectrom.spatial_dim}")
+    logging.info(f"spatial_res_kpc = {spectrom.spatial_res_kpc}\n")
 
-    logging.info("FoV arcsec = {spectrom.FoV_arcsec}")
-    logging.info("spatial_sampl = {spectrom.spatial_sampl}")
-    logging.info("spatial_res = {spectrom.spatial_res}\n")
+    logging.info(f"FoV arcsec = {spectrom.FoV_arcsec}")
+    logging.info(f"spatial_sampl = {spectrom.spatial_sampl}")
+    logging.info(f"spatial_res = {spectrom.spatial_res}\n")
 
-    logging.info("oversampling = {spectrom.oversampling}")
-    logging.info("kernel scale = {spectrom.kernel_scale}")
-    logging.info("target noise = {spectrom.sigma_cont}\n")
+    logging.info(f"oversampling = {spectrom.oversampling}")
+    logging.info(f"kernel scale = {spectrom.kernel_scale}")
+    logging.info(f"target noise = {spectrom.sigma_cont}\n")
 
-    logging.info("velocity_range = {spectrom.velocity_range}")
-    logging.info("velocity_sampl = {spectrom.velocity_sampl}")
-    logging.info("spectral_dim = {spectrom.spectral_dim}")
-    logging.info("spectral_res = {spectrom.spectral_res}\n")
+    logging.info(f"velocity_range = {spectrom.velocity_range}")
+    logging.info(f"velocity_sampl = {spectrom.velocity_sampl}")
+    logging.info(f"spectral_dim = {spectrom.spectral_dim}")
+    logging.info(f"spectral_res = {spectrom.spectral_res}\n")
 
-    logging.info("spectral_range = {spectrom.spectral_range}")
-    logging.info("spectral_sampl = {spectrom.spectral_sampl}")
-    logging.info("::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
+    logging.info(f"spectral_range = {spectrom.spectral_range}")
+    logging.info(f"spectral_sampl = {spectrom.spectral_sampl}")
+    logging.info(f"::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
     return geom, run, spectrom

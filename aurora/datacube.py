@@ -40,27 +40,27 @@ class DatacubeObj():
         Extract main information from the cards in the header
         """
 
-        self.pixsize = self.header['CDELT1'] * unit.pc
-        self.velocity_sampl = self.header['CDELT3'] * unit.km / unit.s
-        self.spatial_dim = self.header['NAXIS1']
-        self.spectral_dim = self.header['NAXIS3']
-        self.fieldofview = self.spatial_dim * self.pixsize.to('kpc')
+        self.pixsize = self.header["CDELT1"] * unit.pc
+        self.velocity_sampl = self.header["CDELT3"] * unit.km / unit.s
+        self.spatial_dim = self.header["NAXIS1"]
+        self.spectral_dim = self.header["NAXIS3"]
+        self.fieldofview = self.spatial_dim * self.pixsize.to("kpc")
         self.velocity_range = self.spectral_dim * \
-            self.velocity_sampl.to('km s^-1')
-        self.channel_ref = self.header['CRPIX3'] - 1
-        self.vel_ref = self.header['CRVAL3'] * unit.km / unit.s
-        self.pixel_ref = self.header['CRPIX1'] - 1
-        self.position_ref = self.header['CRVAL1'] * unit.pc
+            self.velocity_sampl.to("km s^-1")
+        self.channel_ref = self.header["CRPIX3"] - 1
+        self.vel_ref = self.header["CRVAL3"] * unit.km / unit.s
+        self.pixel_ref = self.header["CRPIX1"] - 1
+        self.position_ref = self.header["CRVAL1"] * unit.pc
         self.channels = (np.arange(self.spectral_dim) - self.channel_ref) * (
-            self.velocity_sampl.to('km s^-1').value) + self.vel_ref.to('km s^-1').value
+            self.velocity_sampl.to("km s^-1").value) + self.vel_ref.to("km s^-1").value
 
     def get_one_channel(self, index):
-        v_channel = (index - self.channel_ref)*self.velocity_sampl.to('km s-1')
-        return v_channel + self.vel_ref.to('km s-1')
+        v_channel = (index - self.channel_ref)*self.velocity_sampl.to("km s-1")
+        return v_channel + self.vel_ref.to("km s-1")
 
     def get_one_position(self, index):
-        position = (index - self.pixel_ref) * self.pixsize.to('pc')
-        return position + self.position_ref.to('pc')
+        position = (index - self.pixel_ref) * self.pixsize.to("pc")
+        return position + self.position_ref.to("pc")
 
     def spatial_degrade(self, geom, spectrom):
         """
@@ -100,7 +100,7 @@ class DatacubeObj():
         # > Determine the central position in the new spatial grid
         pos_low = self.get_one_position(shift)
         pos_hi = self.get_one_position(shift + N_pixels - 1)
-        spectrom.position_ref = (pos_low.to('pc')+pos_hi.to('pc'))/2.
+        spectrom.position_ref = (pos_low.to("pc")+pos_hi.to("pc"))/2.
         spectrom.pixel_ref = (spectrom.spatial_dim - 1) / 2.
 
     def spectral_degrade(self, geom, spectrom):
@@ -143,11 +143,11 @@ class DatacubeObj():
             shift+int(spectrom.spectral_dim/2.) * nx)
         vel_hi = self.get_one_channel(
             shift+int(spectrom.spectral_dim/2.) * nx + nx - 1)
-        spectrom.vel_ref = (vel_low.to('km s-1')+vel_hi.to('km s-1'))/2.
+        spectrom.vel_ref = (vel_low.to("km s-1")+vel_hi.to("km s-1"))/2.
         spectrom.channel_ref = int(spectrom.spectral_dim/2)
 
     def intensity_map(self):
-        self.fluxmap = self.cube.sum(axis=0) * self.velocity_sampl.to('km s-1').value
+        self.fluxmap = self.cube.sum(axis=0) * self.velocity_sampl.to("km s-1").value
 
     def velocity_map(self):
         if not hasattr(self,"fluxmap"):
@@ -156,7 +156,7 @@ class DatacubeObj():
         for i in range(self.channels.size):
             velmap = velmap + \
                 self.cube[i, :, :] * self.channels[i] * \
-                self.velocity_sampl.to('km s-1').value
+                self.velocity_sampl.to("km s-1").value
         self.velmap = velmap / self.fluxmap
 
     def dispersion_map(self):
@@ -167,7 +167,7 @@ class DatacubeObj():
         disper = np.zeros(self.fluxmap.shape)
         for i in range(self.channels.size):
             disper += self.cube[i, :, :]*(self.channels[i] - self.velmap)**2
-        self.dispmap = np.sqrt(disper * self.velocity_sampl.to('km s-1').value / self.fluxmap)
+        self.dispmap = np.sqrt(disper * self.velocity_sampl.to("km s-1").value / self.fluxmap)
 
     def all_maps(self):
         self.intensity_map()

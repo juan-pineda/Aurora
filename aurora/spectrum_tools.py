@@ -71,9 +71,9 @@ def get_cube_in_parallel(geom, run, spectrom, data_gas, nchunk):
                                                (geom, run, spectrom, data_gas, i) for i in range(nchunk))
         return sum(cube_list)
     else:
-        logging.warning('Not enough RAM left in your device for this operation in parallel.')
-        logging.info('Needed {memory_needed_ncores}Mb, you have {memory_available}Mb Free.')
-        logging.info('Using a single cpu mode...')
+        logging.warning(f"Not enough RAM left in your device for this operation in parallel.")
+        logging.info(f"Needed {memory_needed_ncores}Mb, you have {memory_available}Mb Free.")
+        logging.info(f"Using a single cpu mode...")
         return get_cube_in_sequential(geom, run, spectrom, data_gas, nchunk)
 
 
@@ -87,7 +87,7 @@ def get_cube_in_sequential(geom, run, spectrom, data_gas, nchunk):
 
     if memory_available > memory_needed_1core:
         if abs(memory_available-memory_needed_1core) < 1000:
-            logging.warning('Your computer may be slow during this operation, be patient.')
+            logging.warning(f"Your computer may be slow during this operation, be patient.")
         cube = np.zeros((n_ch, cube_side, cube_side, run.nfft))
         for i in tqdm(range(nchunk)):
             start = i * run.nvector
@@ -96,7 +96,7 @@ def get_cube_in_sequential(geom, run, spectrom, data_gas, nchunk):
                 geom, run, spectrom, data_gas, start, stop, cube)           
         return cube
     else:
-        raise MemoryError(f'Not enough RAM in your device.')
+        raise MemoryError(f"Not enough RAM in your device.")
 
 
 def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
@@ -117,9 +117,9 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         start, stop, cube = args
 
 #    if geom.redshift > 0:
-#        dl = geom.dl.to('cm').value
+#        dl = geom.dl.to("cm").value
 #    else:
-#        dl = geom.dl.to('pc').value
+#        dl = geom.dl.to("pc").value
 
 	# This object allows to calculate the Halpha flux, and line broadening
     em = emit.Emitters(data_gas[start:stop], spectrom.redshift_ref)
@@ -131,7 +131,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     x, y, index = spectrom.position_in_pixels(em.x,em.y)
 
 	# scale to which each particle belongs according to its smoothing lenght
-    scale = np.digitize(em.smooth.to('kpc'), 1.1 * run.fft_hsml_limits.to('kpc'))
+    scale = np.digitize(em.smooth.to("kpc"), 1.1 * run.fft_hsml_limits.to("kpc"))
 
     line_center, line_sigma, line_flux = em.get_vect_lines(n_ch)
     channel_center, channel_width = em.get_vect_channels(spectrom.vel_channels, spectrom.velocity_sampl, n_ch)
@@ -147,7 +147,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         line_sigma) * line_flux
 
     # Divide by the effective channel width
-    flux_in_channels = flux_in_channels.to('erg s^-1').value / spectrom.velocity_sampl.to('km s^-1').value / spectrom.pixsize.to('pc').value**2
+    flux_in_channels = flux_in_channels.to("erg s^-1").value / spectrom.velocity_sampl.to("km s^-1").value / spectrom.pixsize.to("pc").value**2
     # Compute the fluxes scale by scale
     for i in np.unique(scale):
         ok_level = np.where(scale == i)[0]
@@ -182,45 +182,49 @@ def __cube_convolution(geom, run, spectrom, cube):
     """
     cube_side, n_ch = spectrom.cube_dims()
     for i in range(run.nfft):
-        logging.info("Preparing for spatial smoothing, kernel = {round(run.fft_hsml_limits[i].value*1000, 1)} pc")
+        logging.info(f"Preparing for spatial smoothing, kernel = {round(run.fft_hsml_limits[i].value*1000, 1)} pc")
         sys.stdout.flush()
         # Kernel smoothing
         scale_fwhm = (run.fft_hsml_limits[i] / spectrom.pixsize).decompose().value
         scale_sigma = spectrom.kernel_scale * scale_fwhm / ct.fwhm_sigma
-        logging.info("Size of the kernel in pixels = {round(scale_sigma, 1)}")
+        logging.info(f"Size of the kernel in pixels = {round(scale_sigma, 1)}")
         # Enlarge the kernel adding the effect of the PSF
         if(spectrom.spatial_res_kpc > 0):
-            logging.info(" (Including the effect of the PSF as well)")
+            logging.info(f" (Including the effect of the PSF as well)")
 ####            psf_fwhm = spectrom.spatial_res.value / spectrom.spatial_sampl.value
             psf_fwhm = spectrom.spatial_res_kpc.to(
-                'pc').value / spectrom.pixsize.to('pc').value
+                "pc").value / spectrom.pixsize.to("pc").value
             psf_sigma = psf_fwhm / ct.fwhm_sigma
-            logging.info("Size of the PSF in pixels = {round(psf_sigma, 1)}")
+            logging.info(f"Size of the PSF in pixels = {round(psf_sigma, 1)}")
             scale_sigma = np.sqrt(scale_sigma**2+psf_sigma**2)
-            logging.info("Combination kernel + PSF in pixels = {round(scale_sigma, 1)}")
+            logging.info(f"Combination kernel + PSF in pixels = {round(scale_sigma, 1)}")
         if (scale_sigma <= 0.5):
-            logging.info("-- Small kernel -> skip convolution")
+            logging.info(f"-- Small kernel -> skip convolution")
             sys.stdout.flush()
             continue
 
-# THESE LINES ARE A TEST !  I WILL TRY TO USE MY CONVOLUTION SCHEME TO SEE IF IT IS FASTER
-# 24/05 IN THE NIGHT
+# This is the way I performed the psf convolution until 20/07/2018
+# Then I realized the FFT is introducing non-isotropic noise, aligned along the axes
+# And realized as well that shaping the psf in a square of a side = 8-sigma is not
+# enough. When the log(flux) is considered, sharp edges and square patterns appear
+#        m = dc.DatacubeObj()
+#        m.cube = cube[:, :, :, i]
+#        psf_fwhm = scale_sigma * ct.fwhm_sigma
+#        cv.spatial_convolution_iter(m.cube, psf_fwhm)
+#        cube[:, :, :, i] = m.cube
 
-        m = dc.DatacubeObj()
-        m.cube = cube[:, :, :, i]
-        psf_fwhm = scale_sigma * ct.fwhm_sigma
-        cv.spatial_convolution_iter(m.cube, psf_fwhm)
-        cube[:, :, :, i] = m.cube
+# So, in the same date 20/07/2018 I decided to recover a simpler scheme that might take
+# longer, but it is way cleaner:
+        for j in range(n_ch):
+            if (np.nanmax(cube[j, :, :, i]) == 0):
+                logging.info(f"No flux at this scale/velocity channel -> skip convolution")
+                continue
+            side = cv.next_odd(20*psf_sigma)  
+            psf = astropy.convolution.Gaussian2DKernel(scale_sigma, x_size=side, y_size=side)
+# FFT or spatial convolution? 
+# It depends on whether the noise introduced by FFT schemes is important or not
+#            channel = astropy.convolution.convolve_fft(cube[j,:,:,i], psf,psf_pad=True,normalize_kernel=np.sum,allow_huge=True)
+            channel = astropy.convolution.convolve(cube[j,:,:,i],psf)
+            cube[j, :, :, i] = 0.
+            cube[j, :, :, i] += channel
 
-#        for j in range(n_ch):
-#            if (np.nanmax(cube[j, :, :, i]) == 0):
-#                print "No flux at this scale/velocity channel -> skip convolution"
-#                continue
-#            psf = astropy.convolution.Gaussian2DKernel(scale_sigma)
-#            channel = np.float32(astropy.convolution.convolve_fft(cube[j,:,:,i],
-#                    psf,psf_pad=True,normalize_kernel=np.sum,allow_huge=True))
-#            cube[j, :, :, i] = 0.
-#            cube[j, :, :, i] += channel
-
-# FORMER LINES ARE MY TESTED SCHEME, LETS TRY THE NEW ONE AND SEE IF IT WORKS FINE
-#########################################

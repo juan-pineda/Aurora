@@ -2,8 +2,8 @@ import numpy as np
 import astropy.convolution
 from bisect import bisect_left
 from . import convolutions as cv
-
 from . import constants as ct
+
 
 
 def fft_spatial_convolution(cube, psf_fwhm):
@@ -112,9 +112,17 @@ def __spectral_convolution_iter(m, psf_fwhm):
 #
 ####################################################################
 
+def next_odd(x):
+    x = np.ceil(x)
+    if x % 2 == 1:
+        return x
+    else:
+        return x+1
+
 def create_psf(psf_fwhm):
     psf_sigma = psf_fwhm / ct.fwhm_sigma
-    psf = astropy.convolution.Gaussian2DKernel(psf_sigma)
+    psf = astropy.convolution.Gaussian2DKernel(psf_sigma, x_size= next_odd(20*psf_sigma), y_size=next_odd(20*psf_sigma))
+#    psf = astropy.convolution.Gaussian2DKernel(psf_sigma)
     psf = np.array(psf)
     psf = psf / psf.sum()
     return psf
@@ -165,7 +173,7 @@ def next_fast_len(target):
     if target <= 6:
         return target
 
-    # Quickly check if it's already a power of 2
+    # Quickly check if it"s already a power of 2
     if not (target & (target-1)):
         return target
 
@@ -173,7 +181,7 @@ def next_fast_len(target):
     if target <= hams[-1]:
         return hams[bisect_left(hams, target)]
 
-    match = float('inf')  # Anything found will be smaller
+    match = float("inf")  # Anything found will be smaller
     p5 = 1
     while p5 < target:
         p35 = p5

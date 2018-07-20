@@ -49,8 +49,8 @@ warnings.filterwarnings("ignore")
 
 def __setup_logging():
     logging.basicConfig(
-        format='%(levelname)s:%(message)s', 
-        filename='aurora.log', 
+        format="%(levelname)s:%(message)s", 
+        filename="aurora.log", 
         level=logging.INFO)
 
 
@@ -59,11 +59,11 @@ def __aurora_version():
     """
     Print the version of Aurora being used for future references.
     """
-    print('   ___               ')
-    print('  / _ |__ _________  _______ _   ')
-    print(' / __ / // / __/ _ \/ __/ _ `/   ')
-    print('/_/ |_\___/_/  \___/_/  \___/    ')
-    print('////// Version 2.1')
+    print("   ___               ")
+    print("  / _ |__ _________  _______ _   ")
+    print(" / __ / // / __/ _ \/ __/ _ `/   ")
+    print("/_/ |_\___/_/  \___/_/  \___/    ")
+    print("////// Version 2.1")
 
 
 def spectrom_mock(ConfigFile):
@@ -91,8 +91,8 @@ def spectrom_mock(ConfigFile):
     gc.collect()
     
     # > Retain only those gas particles wich lie inside the field of view
-    lim = spectrom.fieldofview.to('kpc').value/2.
-    data_gas = snap.filter_array(data_gas,['x','y'],2*[-lim],2*[lim],2*['kpc'])
+    lim = spectrom.fieldofview.to("kpc").value/2.
+    data_gas = snap.filter_array(data_gas,["x","y"],2*[-lim],2*[lim],2*["kpc"])
 
     # Code flow:
     # =====================
@@ -117,10 +117,10 @@ def spectrom_mock(ConfigFile):
     spectrom.undersample()
 
     if(spectrom.sigma_cont > 0.):
-        logging.info('// Noise injection')
+        logging.info(f"// Noise injection")
         cube_noise = cube + np.random.normal(0.0, spectrom.sigma_cont, cube.shape)
 
-    logging.info('Created file {run.output_name}')
+    logging.info(f"Created file {run.output_name}")
     so.writing_datacube(geom, spectrom, run, cube)
 
 
@@ -147,21 +147,21 @@ def degrade_mastercube(ConfigFile):
     m.read_data(run.input_file)
     m.get_attr()
 
-    psf_fwhm = spectrom.spatial_res_kpc / m.pixsize.to('kpc')
+    psf_fwhm = spectrom.spatial_res_kpc / m.pixsize.to("kpc")
     spec.__spatial_convolution(m.cube, psf_fwhm)
-    psf_fwhm = ct.c.to('km s-1') / spectrom.spectral_res / m.velocity_sampl
+    psf_fwhm = ct.c.to("km s-1") / spectrom.spectral_res / m.velocity_sampl
     spec.__spectral_convolution(m.cube, psf_fwhm)
 
     m.spatial_degrade(geom, spectrom)
     m.spectral_degrade(geom, spectrom)
 
     # Aqui falta que *spectrom* absorba keywords del header de m
-    geom.theta = m.header['THETA'] * unit.deg
-    geom.phi = m.header['PHI'] * unit.deg
-    run.simulation_id = m.header['SIMULAT']
-    run.snapshot_id = m.header['SNAPSHOT']
-    run.reference_id = m.header['SNAP_REF']
-    spectrom.redshift_ref = m.header['Z_REF']
+    geom.theta = m.header["THETA"] * unit.deg
+    geom.phi = m.header["PHI"] * unit.deg
+    run.simulation_id = m.header["SIMULAT"]
+    run.snapshot_id = m.header["SNAPSHOT"]
+    run.reference_id = m.header["SNAP_REF"]
+    spectrom.redshift_ref = m.header["Z_REF"]
 
     so.writing_datacube(geom, spectrom, run, m.cube)
 
