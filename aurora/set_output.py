@@ -91,7 +91,7 @@ def writing_datacube(geom, spectrom, run, dataset):
     prihdr = hdu.header
     prihdr["NAXIS"] = 3
     prihdr["NAXIS3"] = spectrom.spectral_dim
-    prihdr["BUNIT"] = "ERG.S^-1.PC^-2.KM^-1.S"
+    prihdr["BUNIT"] = "ERG.S^-1.cm^-2.KM^-1.S"
     prihdr["CRPIX3"] = (spectrom.channel_ref + 1,
                         "Center of the first pixel is 1")
     prihdr["CRVAL3"] = spectrom.vel_ref.to("km s-1").value
@@ -138,7 +138,7 @@ def writing_maps(m, dataset, datatype, output_name):
     prihdr = hdu.header
     prihdr["NAXIS"] = 2
     if datatype == "flux":
-        prihdr["BUNIT"] = "ERG.S^-1.PC^-2"  # ?????
+        prihdr["BUNIT"] = "ERG.S^-1.cm^-2"  
     elif datatype == "velocity":
         prihdr["BUNIT"] = "KM.S^-1"
     elif datatype == "dispersion":

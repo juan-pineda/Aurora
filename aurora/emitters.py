@@ -24,9 +24,8 @@ class Emitters:
 
 	def density_cut(self, density_cut="Not"):
 		if density_cut=="Not":
-			print("Nothing to cut")
+			pass
 		elif density_cut=="polytrope":
-			print("polytropic cut to be implemented")
 			logdens = np.log10(self.dens.to("6.77e-23 g cm**-3").value)
 			logtemp = np.log10(self.temp.to("K").value)
 			tokill = ((logdens > logtemp - 3.5) & (logdens > 0.7) )
@@ -35,7 +34,6 @@ class Emitters:
 			self.dens = self.dens*unit.g/unit.cm**3
 		else:
 			thresh = 10**np.float(density_cut)
-			print("Cutting a threshold: ",thresh)
 			tokill = (self.dens.to("6.77e-23 g cm**-3").value > thresh)
 			self.dens = self.dens.to("g cm**-3").value
 			self.dens[tokill] = np.min(self.dens) / 10

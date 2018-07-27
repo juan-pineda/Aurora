@@ -162,8 +162,7 @@ class GeometryObj():
         if ~np.isnan(self.redshift):
             self.dl = cosmo.luminosity_distance(self.redshift)
             self.lambda_em = (1 + self.redshift) * ct.Halpha0
-            self.dist_angular = cosmo.kpc_proper_per_arcmin(self.redshift).to(
-                "Mpc / rad").value * unit.Mpc
+            self.dist_angular = cosmo.angular_diameter_distance(self.redshift)
 
     def kpc_to_arcsec(self, length):
         length_arcsec = length.to("pc").value/self.dist_angular.to("pc").value
