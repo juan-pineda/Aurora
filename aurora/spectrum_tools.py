@@ -220,7 +220,7 @@ def __cube_convolution(geom, run, spectrom, cube):
             if (np.nanmax(cube[j, :, :, i]) == 0):
                 logging.info(f"No flux at this scale/velocity channel -> skip convolution")
                 continue
-            side = cv.next_odd(20*psf_sigma)  
+            side = cv.next_odd(20*scale_sigma)  
             psf = astropy.convolution.Gaussian2DKernel(scale_sigma, x_size=side, y_size=side)
 # FFT or spatial convolution? 
 # It depends on whether the noise introduced by FFT schemes is important or not
