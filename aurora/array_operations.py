@@ -1,53 +1,39 @@
 import sys
 import math
 import numpy as np
-from scipy import special
-import astropy.convolution
-from scipy import interpolate
-from astropy import constants as const
-
-from . import constants as ct
-from . import snapshot_tools as snap
-from . import gasProps_sBird as bird
-from . import spectrum_tools as spec
+from scipy import ndimage
 
 
-def bin_array(x, n, axis=0, normalized=False):
+def bin_array(x, n, axis=0):
     """
     Bin the elements in one direction of a 2D or 3D array
-
-    Parameters
-    ----------
-    x : array to be binned.
-
-    n : int
-        binning factor, i.e, number of elements to be added together.
-
-    axis : int
-        axis along which the binning operation takes place.
-    normalized : if true, the total sum is conserved
-
+    
+    :param array x: Array to be binned.
+    :param int n: Binning factor, i.e, number of elements to be added together
+                  must be a divisor of the number of elements on the axis.
+    :param int axis: Axis along which the binning operation takes place.
+    :return array array: Binned Array.
     """
 
     # Code flow:
     # =====================
     # > Switch axes to work along axis 0 as default
-    # > Discard the leftover to have same weight in all binned pixels
-    # > Perform the binning operation and normalize
+    # > Perform the binning operation 
     x = np.swapaxes(x, 0, axis)
+    if x.shape[0]%n !0:
+        logging.error(f"// n is not a divisor of the number of elements of the axis")
+        sys.exit()
     dim = int(x.shape[0] / n)
     if len(x.shape) == 2:
         x = x[:dim*n, :]
         array = np.zeros([dim, x.shape[1]])
         for i in range(dim):
-            array[i, :] = x[i*n:(i+1)*n, :].sum()
+            array[i, :] = x[i*n:(i+1)*n, :].sum(axis = 0)
     elif len(x.shape) == 3:
         x = x[:dim*n, :, :]
         array = np.zeros([dim, x.shape[1], x.shape[2]])
         for i in range(n):
             array += x[i::n, :, :]
-    if normalized == True:
-        array = array / n
     array = np.swapaxes(array, 0, axis)
     return array
 

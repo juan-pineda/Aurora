@@ -112,8 +112,8 @@ def spectrom_mock(ConfigFile):
     # > Inject noise
     # > Store the final datacube
 
-    cube = arr.bin_array(cube, spectrom.oversampling, axis=1, normalized=True)
-    cube = arr.bin_array(cube, spectrom.oversampling, axis=2, normalized=True)
+    cube = arr.bin_array(cube, spectrom.oversampling, axis=1)
+    cube = arr.bin_array(cube, spectrom.oversampling, axis=2)
     spectrom.undersample()
 
     if(spectrom.sigma_cont > 0.):
