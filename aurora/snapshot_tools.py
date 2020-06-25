@@ -7,8 +7,14 @@ from astropy import units as unit
 
 from . import constants as ct
 
-# Reads the simulation snapshot file
 def read_snap(input_file):
+    """
+    Reads the simulation snapshot file
+    
+    :param str input_file: File name
+    :return data: data snapshot file
+    :type data: pynbody.snapshot
+    """
     try:
         logging.info(f"// Pynbody -> Reading file {input_file}")
         sys.stdout.flush()
@@ -18,9 +24,23 @@ def read_snap(input_file):
         logging.error(f"// The input file specified cannot be read")
         sys.exit()
 
-# For a given array, and a given property (key), it drops all data outside some
-# provided boundaries
 def filter_array(data, prop, mini, maxi, units):
+    """
+    For a given array, and a given property (key), it drops all data outside some
+    provided boundaries
+    
+    :param data: Array to filter
+    :type data: pynbody.snapshot.FamilySubSnap
+    :param prop: Propierty (key)
+    :type prop: list[str] or str
+    :param mini: Lower boundaries
+    :type mini: list[int, float], floar or int
+    :param maxi: Upper boundaries
+    :type maxi: list[int, float], floar or int
+    :type data: pynbody.snapshot
+    :return output: Filtered array
+    :type output: pynbody.snapshot.FamilySubSnap
+    """
     if type(prop) == list:
         output = data
         for i in range(len(prop)):
@@ -35,9 +55,18 @@ def filter_array(data, prop, mini, maxi, units):
             output = data[ok]
     return output
 
-# Determines the number of scales in the data. If there are between
-# 2 and 20 smoothing lengths, the *nfft* provided wil be superseded
 def set_hsml_limits(run, data_gas):
+    """
+    Determines the number of scales in the data. If there are between
+    2 and 20 smoothing lengths, the *nfft* provided will be superseded.
+    If the smoothing lengths are greater than 20, the *nfft* and 
+    *fft_hsml_min* must be defined.
+    
+    :param run: run object
+    :type run: aurora.configuration.RunObj
+    :param data_gas: Gas array
+    :type data_gas: pynbody.snapshot.FamilySubSnap
+    """
     if(len(data_gas) > 0):
         smooth = np.unique(data_gas["smooth"])
         n_smooth = len(smooth)
@@ -52,8 +81,25 @@ def set_hsml_limits(run, data_gas):
         sys.exit()
     logging.info(f"// {str(run.nfft).strip()} levels for adaptive smoothing")
 
-# Fix center and orientation of the disc, and filter out data if specified
 def set_snapshots_ready(geom, run, data):
+    """
+    Fix center and orientation of the disc, separates the data file into 
+    three types (*star*, *gas* and *dark matter*) and filter gas data 
+    if specified.
+    
+    :param geom: geom object
+    :type geom: aurora.configuration.GeometryObj
+    :param run: run object
+    :type run: aurora.configuration.RunObj
+    :param data: data snapshot file
+    :type data: pynbody.snapshot
+    :return data_gas: Gas array
+    :type data_gas: pynbody.snapshot.FamilySubSnap
+    :return data_star: Star array
+    :type data_star: pynbody.snapshot.FamilySubSnap
+    :return data_dm: Dark matter array
+    :type data_dm: pynbody.snapshot.FamilySubSnap
+    """
     # If a reference snapshot was specified, compute the transformations using that one first
     if geom.reference != "":
         data_ref = read_snap(geom.reference)

@@ -8,11 +8,11 @@ def bin_array(x, n, axis=0):
     """
     Bin the elements in one direction of a 2D or 3D array
     
-    :param array x: Array to be binned.
+    :param array x: Array to be binned
     :param int n: Binning factor, i.e, number of elements to be added together
-                  must be a divisor of the number of elements on the axis.
-    :param int axis: Axis along which the binning operation takes place.
-    :return array array: Binned Array.
+                  must be a divisor of the number of elements on the axis
+    :param int axis: Axis along which the binning operation takes place
+    :return array array: Binned Array
     """
 
     # Code flow:
