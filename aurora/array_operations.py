@@ -20,7 +20,7 @@ def bin_array(x, n, axis=0):
     # > Switch axes to work along axis 0 as default
     # > Perform the binning operation 
     x = np.swapaxes(x, 0, axis)
-    if x.shape[0]%n !0:
+    if x.shape[0]%n != 0:
         logging.error(f"// n is not a divisor of the number of elements of the axis")
         sys.exit()
     dim = int(x.shape[0] / n)
