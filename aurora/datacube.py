@@ -90,8 +90,8 @@ class DatacubeObj():
         shift = int((self.spatial_dim - N_pixels) / 2)
         self.cube = self.cube[:, shift:shift +
                               N_pixels, shift:shift + N_pixels]
-        self.cube = arr.bin_array(self.cube, nx, axis=1, normalized=True)
-        self.cube = arr.bin_array(self.cube, nx, axis=2, normalized=True)
+        self.cube = arr.bin_array(self.cube, nx, axis=1)
+        self.cube = arr.bin_array(self.cube, nx, axis=2)
 
         # > update the necessary keywords in the header
         spectrom.check_pixsize(geom)
@@ -131,7 +131,7 @@ class DatacubeObj():
         N_pixels = nx * spectrom.spectral_dim
         shift = int((self.spectral_dim - N_pixels) / 2)
         self.cube = self.cube[shift:shift + N_pixels, :, :]
-        self.cube = arr.bin_array(self.cube, nx, axis=0, normalized=True)
+        self.cube = arr.bin_array(self.cube, nx, axis=0)
 
         # > update the necessary keywords in the header
         spectrom.check_velocity_sampl(geom)
