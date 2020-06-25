@@ -1,5 +1,4 @@
 import os
-import gc
 import sys
 import math
 import logging
@@ -7,16 +6,9 @@ import astropy
 import numpy as np
 from tqdm import tqdm
 import astropy.convolution
-from scipy import interpolate
-from astropy import constants as const
 
 from joblib import Parallel, delayed
-import multiprocessing
 
-from . import aurora as au
-from . import snapshot_tools as snap
-from . import gasProps_sBird as bird
-from . import datacube as dc
 from . import constants as ct
 from . import emitters as emit
 from . import convolutions as cv
@@ -35,6 +27,8 @@ def __project_all_chunks(geom, run, spectrom, data_gas):
         See definitions in configuration.py.
     spectrom : object of class *spectrom_obj*
         See definitions in configuration.py.
+    data_gas : gas particles identified in 
+        the input archive.
 
     Returns
     -------
@@ -79,7 +73,28 @@ def get_cube_in_parallel(geom, run, spectrom, data_gas, nchunk):
 
 def get_cube_in_sequential(geom, run, spectrom, data_gas, nchunk):
     """
+    Determine the availability of RAM memory to carry out the flow
+    projection process, and sets the upper and lower limits on gas 
+    particles according to *nchunks*
+
+    Parameters
+    ----------
+    geom : object of class *geometry_obj*
+        See definitions in configuration.py.
+    run : object of class *run_obj*
+        See definitions in configuration.py.
+    spectrom : object of class *spectrom_obj*
+        See definitions in configuration.py.
+    data_gas : gas particles identified in 
+        the input archive.
+
+    Returns
+    -------
+    cube : 4D-array
+        Contains the fluxes at each pixel and velocity channel produced
+        by the gas particles with a given smoothing lengths separately.
     """
+    
     cube_side, n_ch = spectrom.cube_dims()
     cube_size = np.zeros((n_ch, cube_side, cube_side, run.nfft)).nbytes
     memory_needed_1core = int(cube_size/1e6)
