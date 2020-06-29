@@ -1,15 +1,36 @@
+"""
+.. py:module:: set_output
+
+Methods to prepare the output files of the processed cubes.
+"""
+
 import os
 import sys
 import logging
+
 from astropy.io import fits
 
-##-- Customized python capabilities defined inside aurora --##
 from . import constants as ct
 from . import spectrum_tools as spec
 
 
 def set_output_filename(geom, run):
-    # Set output name and tries to crete the necessary directories recursively
+    """
+    Set output name and tries to create the necessary directories recursively.
+    
+    :param geom:  geom object
+    :type geom: aurora.configuration.GeometryObj
+    :param run:  run object
+    :type run: aurora.configuration.RunObj
+    :return str output_name: Name for the output file
+    """    
+    
+    # Code flow:
+    # =====================
+    # > Create an output dir
+    # > Create a name for the output file
+    
+    # Check if there is an output dir, otherwise create it
     if(run.output_dir == ""):
         cwd = os.getcwd()
         path, input_file = os.path.split(os.path.realpath(run.input_file))
@@ -86,9 +107,26 @@ def old_writing_datacube(geom, spectrom, dataset, output_name):
 
 
 def writing_datacube(geom, spectrom, run, dataset):
+    """
+    Create and write the output file in FITS format of the processed cube.
+    
+    :param geom:  geom object
+    :type geom: aurora.configuration.GeometryObj
+    :param spectrom:  spectrom object
+    :type spectrom: aurora.configuration.SpectromObj
+    :param run:  run object
+    :type run: aurora.configuration.RunObj
+    :param array dataset: Cube processed
+    """
+    
+    # Code flow:
+    # =====================
+    # > Create the FITS file with the processed cube
+    # > Write main information in FITS file header
+    # > Save the final FITS file in the dir and with the supplied name
     hdu = fits.PrimaryHDU(dataset)
     hdulist = fits.HDUList([hdu])
-    prihdr = hdu.header
+    prihdr = hdu.header()
     prihdr["NAXIS"] = 3
     prihdr["NAXIS3"] = spectrom.spectral_dim
     prihdr["BUNIT"] = "ERG.S^-1.cm^-2.KM^-1.S"
@@ -130,9 +168,25 @@ def writing_datacube(geom, spectrom, run, dataset):
         "kpc").value, "Spatial resolution in [kpc]")
     prihdr["SPEC_RES"] = (spectrom.spectral_res, "Spectral resolution, R")
     hdulist.writeto(run.output_name, clobber=True)
+    hdulist.close()
 
 
 def writing_maps(m, dataset, datatype, output_name):
+    """
+    Create and write the output file in FITS format of the processed map.
+
+    :param m: datacube. 
+    :type m: aurora.datacube.DatacubeObj
+    :param array dataset: Map
+    :param str datatype: Map type ("flux", "velocity", "dispersion")
+    :param str output_name: Name for the output file
+    """
+    
+    # Code flow:
+    # =====================
+    # > Create the FITS file with the processed map
+    # > Write main information in FITS file header
+    # > Save the final FITS file in the dir and with the supplied output_name
     hdu = fits.PrimaryHDU(dataset)
     hdulist = fits.HDUList([hdu])
     prihdr = hdu.header

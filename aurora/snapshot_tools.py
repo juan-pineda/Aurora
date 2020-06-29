@@ -1,20 +1,28 @@
+"""
+.. py:module:: snapshot_tools
+
+Methods that prepare the snapshot to build the synthetic cube.
+"""
+
 import gc
 import sys
 import logging
-import pynbody
 import numpy as np
+
+import pynbody
 from astropy import units as unit
 
 from . import constants as ct
 
 def read_snap(input_file):
     """
-    Reads the simulation snapshot file
+    Reads the simulation snapshot file.
     
     :param str input_file: File name
     :return data: data snapshot file
     :type data: pynbody.snapshot
     """
+    
     try:
         logging.info(f"// Pynbody -> Reading file {input_file}")
         sys.stdout.flush()
@@ -27,7 +35,7 @@ def read_snap(input_file):
 def filter_array(data, prop, mini, maxi, units):
     """
     For a given array, and a given property (key), it drops all data outside some
-    provided boundaries
+    provided boundaries.
     
     :param data: Array to filter
     :type data: pynbody.snapshot.FamilySubSnap
@@ -41,6 +49,7 @@ def filter_array(data, prop, mini, maxi, units):
     :return output: Filtered array
     :type output: pynbody.snapshot.FamilySubSnap
     """
+   
     if type(prop) == list:
         output = data
         for i in range(len(prop)):
@@ -67,11 +76,16 @@ def set_hsml_limits(run, data_gas):
     :param data_gas: Gas array
     :type data_gas: pynbody.snapshot.FamilySubSnap
     """
+    
+    # Code flow:
+    # =====================
+    # > Find the unique elements of data_gas["smooth"]
+    # > Assign the smoothing lengths limit values as the case may be
     if(len(data_gas) > 0):
         smooth = np.unique(data_gas["smooth"])
         n_smooth = len(smooth)
         if((n_smooth > 1) & (n_smooth < 20)):
-            run.fft_hsml_limits = np.sort(smooth).in_units("kpc")*unit.kpc
+            run.fft_hsml_limits = smooth.in_units("kpc")*unit.kpc
             run.nfft = n_smooth
         else:
             run.fft_hsml_limits = np.arange(1.0, run.nfft + 1)
@@ -100,6 +114,13 @@ def set_snapshots_ready(geom, run, data):
     :return data_dm: Dark matter array
     :type data_dm: pynbody.snapshot.FamilySubSnap
     """
+    
+    # Code flow:
+    # =====================
+    # > Center and apply the transformation to the snapshot 
+    # > Assign the particle families of the snapshot in different instances
+    # > Filters gas particles
+    
     # If a reference snapshot was specified, compute the transformations using that one first
     if geom.reference != "":
         data_ref = read_snap(geom.reference)
@@ -153,6 +174,3 @@ def set_snapshots_ready(geom, run, data):
     logging.info(f"// n_gas     -> {ngas}")
     logging.info(f"// n_dm      -> {ndm}")
     return [data_gas, data_star, data_dm]
-
-
-

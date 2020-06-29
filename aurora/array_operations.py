@@ -6,7 +6,7 @@ from scipy import ndimage
 
 def bin_array(x, n, axis=0):
     """
-    Bin the elements in one direction of a 2D or 3D array
+    Bin the elements in one direction of a 2D or 3D array.
     
     :param array x: Array to be binned
     :param int n: Binning factor, i.e, number of elements to be added together
