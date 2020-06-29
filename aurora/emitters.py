@@ -1,4 +1,3 @@
-import pynbody
 import numpy as np
 from scipy import special
 from astropy import units as unit
@@ -7,10 +6,15 @@ from . import constants as ct
 from . import gasProps_sBird as bird
 
 class Emitters:
-
+    """
+    Group the main parameters to compute the H-alpha emission of a 
+    bunch of particles using the main physical quantities in the 
+    simulation, and deriving other important physical quantites 
+    from them.
+    """
     # Get the main physical quantities in the simulation, converting pynbody
-    # instances to astropy ones, to assure compatibility across operations
-    def __init__(self, data_gas,redshift=None):
+    # instances to astropy ones, to assure compatibility across operations.
+    def __init__(self, data_gas, redshift=None):
         self.N = len(data_gas)
         self.data = data_gas
         self.redshift = redshift
@@ -22,10 +26,10 @@ class Emitters:
         self.smooth = np.array(data_gas["smooth"].in_units("kpc"))*unit.kpc
         self.u = np.array(data_gas["u"].in_units("cm**2 s**-2"))*unit.cm**2/unit.s**2
 
-    def density_cut(self, density_cut="Not"):
-        if density_cut=="Not":
+    def density_cut(self, density_cut = "Not"):
+        if density_cut == "Not":
             pass
-        elif density_cut=="polytrope":
+        elif density_cut == "polytrope":
             logdens = np.log10(self.dens.to("6.77e-23 g cm**-3").value)
             logtemp = np.log10(self.temp.to("K").value)
             tokill = ((logdens > logtemp - 3.5) & (logdens > 0.7) )
@@ -42,12 +46,23 @@ class Emitters:
 
     # Derived physical quantities
     def get_state(self):
+        """
+        Calculate the temperature, HII, mu and ions density of a bunch
+        of particles using the main physical quantitties in the 
+        simulation.
+        """
         self.get_temp()
         self.get_HII()
         self.get_mu()
         self.get_dens_ion()
 
     def get_luminosity(self, mode, density_cut="Not"):
+        """
+        Calculate the temperature, HII, mu and ions density of a bunch
+        of particles using the main physical quantitties in the 
+        simulation.
+        """
+        
         self.get_alphaH()
         if mode == "square":
             Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH 
