@@ -122,7 +122,15 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     :param data_gas: Gas array containing gas particles
     identified in the input archive.
     :type data_gas: pynbody.snapshot.FamilySubSnap
+    :param *args: number of chunks to divide the gas
+    particles, or list of gas particles to be projected.
+    :type *args: list, numpy.ndarray
+    :return cube: 4D-array, contains the fluxes at each
+    pixel and velocity channel produced by the gas 
+    particles with a given smoothing lengths separately. 
+    :type cube: numpy.ndarray
     """
+    
     cube_side, n_ch = spectrom.cube_dims()
     if len(args) == 1:
         i = args[0]
@@ -140,7 +148,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     # This object allows to calculate the Halpha flux, and line broadening
     em = emit.Emitters(data_gas[start:stop], spectrom.redshift_ref)
     em.get_state()
-#    em.density_cut(spectrom.density_cut) # new feature in test !!!	
+#    em.density_cut(spectrom.density_cut) # new feature in test !!!
     em.get_luminosity(spectrom.lum_dens_rel, spectrom.density_cut) # new feature in test !!!
     em.get_vel_dispersion()
 
