@@ -1,5 +1,5 @@
 import sys
-import math
+import logging
 import numpy as np
 from scipy import ndimage
 
@@ -38,33 +38,34 @@ def bin_array(x, n, axis=0):
     return array
 
 
-def cube_resampling(spectrom, m):
+def cube_resampling(cube, new_cube):
     """
     Interpolate a 3D master datacube to new spatial/spectral coordinates
     at once.
-
-    Parameters
-    ----------
+    
+    
+    :param cube: Old datacube. 
+    :type cube: aurora.datacube.DatacubeObj
+    :param new_cube: New datacube. Must store information about 
+                     spatial/spectral coordinates
+    :type new_cube: aurora.datacube.DatacubeObj
     """
-
-    # New array to store the version of the mastercube spatially binned
-    cube_side, n_ch = spectrom.cube_dims()
-    cube = np.zeros((m.spectral_dim, cube_side, cube_side))
-    # Step to augment 1 pixel of the new array, in units of original mastercube pixels
-    pixratio = spectrom.pixsize/m.pixsize
-    # position of the first pixel of the new array, in units of original mastercube pixels
-    origin = (m.spatial_dim - spectrom.spatial_dim *
-              pixratio + pixratio - 1.) / 2
-    new_positions = origin + pixratio * np.arange(spectrom.spatial_dim)
-    # And now the same thing for the spectral direction
-    channelratio = spectrom.velocity_sampl/m.velocity_sampl
-    origin = (m.spectral_dim - spectrom.spectral_dim *
-              channelratio + channelratio - 1.) / 2
-    new_channels = origin + channelratio * np.arange(spectrom.spectral_dim)
+    
+    # Code flow:
+    # =====================
+    # > Calculate the transformation factor to the new spatial/spectral 
+    #   coordinates
+    # > Determines the spatial coordinates of the new system with respect to 
+    #   the original
+    # > Interpolates into the new data_cube    
+    pixratio = cube.pixsize.value / new_cube.pixsize.value
+    channelratio = cube.velocity_sampl.value/new_cube.velocity_sampl.value
+    origin_spatial = (cube.spatial_dim - new_cube.spatial_dim/pixratio   
+              - 1. + 1/pixratio) / 2
+    new_positions = origin_spatial + np.arange(new_cube.spatial_dim)/pixratio
+    origin_spectral = (cube.spectral_dim - new_cube.spectral_dim/channelratio
+               - 1. + 1/channelratio) / 2
+    new_channels = origin_spectral + np.arange(new_cube.spectral_dim)/channelratio
     X, Y, Z = np.meshgrid(new_positions, new_positions, new_channels)
-    m.cube = ndimage.map_coordinates(m.cube, [X, Z, Y], order=1).T
-###########
-# One tricky part is missing
-# What is the right normalization and units we want ???????
-    # The total flux
-####    cube = cube * pixratio**2
+    new_cube.cube = ndimage.map_coordinates(cube.cube, [Z, X, Y], order=1).T
+    #new_cube.cube = new_cube.cube / pixratio**2
