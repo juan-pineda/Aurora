@@ -18,9 +18,10 @@ def read_snap(input_file):
     """
     Reads the simulation snapshot file.
     
-    :param str input_file: File name
-    :return data: data snapshot file
-    :type data: pynbody.snapshot
+    :param str input_file: File name.
+    
+    :return data: data snapshot file.
+    :type data: pynbody.snapshot.
     """
     
     try:
@@ -37,16 +38,16 @@ def filter_array(data, prop, mini, maxi, units):
     For a given array, and a given property (key), it drops all data outside some
     provided boundaries.
     
-    :param data: Array to filter
+    :param data: Array to filter.
     :type data: pynbody.snapshot.FamilySubSnap
-    :param prop: Propierty (key)
-    :type prop: list[str] or str
-    :param mini: Lower boundaries
+    :param prop: Propierty (key).
+    :type prop: list[str] or str.
+    :param mini: Lower boundaries.
     :type mini: list[int, float], floar or int
-    :param maxi: Upper boundaries
+    :param maxi: Upper boundaries.
     :type maxi: list[int, float], floar or int
-    :type data: pynbody.snapshot
-    :return output: Filtered array
+    
+    :return output: Filtered array.
     :type output: pynbody.snapshot.FamilySubSnap
     """
    
@@ -73,7 +74,7 @@ def set_hsml_limits(run, data_gas):
     
     :param run: run object
     :type run: aurora.configuration.RunObj
-    :param data_gas: Gas array
+    :param data_gas: Gas array.
     :type data_gas: pynbody.snapshot.FamilySubSnap
     """
     
@@ -101,17 +102,18 @@ def set_snapshots_ready(geom, run, data):
     three types (*star*, *gas* and *dark matter*) and filter gas data 
     if specified.
     
-    :param geom: geom object
+    :param geom: geom object.
     :type geom: aurora.configuration.GeometryObj
-    :param run: run object
+    :param run: run object.
     :type run: aurora.configuration.RunObj
-    :param data: data snapshot file
+    :param data: data snapshot file.
     :type data: pynbody.snapshot
-    :return data_gas: Gas array
+    
+    :return data_gas: Gas array.
     :type data_gas: pynbody.snapshot.FamilySubSnap
-    :return data_star: Star array
+    :return data_star: Star array.
     :type data_star: pynbody.snapshot.FamilySubSnap
-    :return data_dm: Dark matter array
+    :return data_dm: Dark matter array.
     :type data_dm: pynbody.snapshot.FamilySubSnap
     """
     

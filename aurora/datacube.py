@@ -48,7 +48,7 @@ class DatacubeObj():
         self.velocity_range = self.spectral_dim * \
             self.velocity_sampl.to("km s^-1")
         self.channel_ref = self.header["CRPIX3"] - 1
-        self.vel_ref = self.header["CRVAL3"] * unit.km / unit.s
+        self.vel_ref = self.header["CRVAL3"] * unit.km/unit.s
         self.pixel_ref = self.header["CRPIX1"] - 1
         self.position_ref = self.header["CRVAL1"] * unit.pc
         self.channels = (np.arange(self.spectral_dim) - self.channel_ref) * (
@@ -56,19 +56,21 @@ class DatacubeObj():
         
     def assign_attr(self, pixsize, velocity_sampl, spatial_dim, spectral_dim):
         """
-        Assign entered attributes
+        Assign entered attributes.
         
-        :param float pixsize: In pc
-        :param float velocity_sampl: In km/s
+        :param float pixsize: In pc.
+        :param float velocity_sampl: In km/s.
         :param int spatial_dim: Number of pixels per cube side in 
-                                the spatial dimension
+                                the spatial dimension.
         :param int spectral_dim: Number of channels in the spectral 
-                                 dimension                         
+                                 dimension.                         
         """
         self.pixsize = pixsize * unit.pc
         self.velocity_sampl = velocity_sampl * unit.km/unit.s
         self.spatial_dim = spatial_dim
         self.spectral_dim = spectral_dim
+        self.channels = np.arange(-spectral_dim/2 * velocity_sampl, spectral_dim/2 
+                        * velocity_sampl, velocity_sampl)
        
     
     def get_one_channel(self, index):

@@ -8,11 +8,14 @@ def bin_array(x, n, axis=0):
     """
     Bin the elements in one direction of a 2D or 3D array.
     
-    :param array x: Array to be binned
+    :param x: Array to be binned.
+    :type x: numpy.ndarray
     :param int n: Binning factor, i.e, number of elements to be added together
-                  must be a divisor of the number of elements on the axis
-    :param int axis: Axis along which the binning operation takes place
-    :return array array: Binned Array
+                  must be a divisor of the number of elements on the axis.
+    :param int axis: Axis along which the binning operation takes place.
+    
+    :return array: Binned Array.
+    :type array: numpy.ndarray
     """
 
     # Code flow:
@@ -47,7 +50,7 @@ def cube_resampling(cube, new_cube):
     :param cube: Old datacube. 
     :type cube: aurora.datacube.DatacubeObj
     :param new_cube: New datacube. Must store information about 
-                     spatial/spectral coordinates
+                     spatial/spectral coordinates.
     :type new_cube: aurora.datacube.DatacubeObj
     """
     
@@ -68,4 +71,4 @@ def cube_resampling(cube, new_cube):
     new_channels = origin_spectral + np.arange(new_cube.spectral_dim)/channelratio
     X, Y, Z = np.meshgrid(new_positions, new_positions, new_channels)
     new_cube.cube = ndimage.map_coordinates(cube.cube, [Z, X, Y], order=1).T
-    #new_cube.cube = new_cube.cube / pixratio**2
+    new_cube.cube = new_cube.cube / (pixratio  * channelratio)**2

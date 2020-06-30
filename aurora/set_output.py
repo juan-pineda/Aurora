@@ -18,11 +18,12 @@ def set_output_filename(geom, run):
     """
     Set output name and tries to create the necessary directories recursively.
     
-    :param geom:  geom object
+    :param geom:  geom object.
     :type geom: aurora.configuration.GeometryObj
-    :param run:  run object
+    :param run:  run object.
     :type run: aurora.configuration.RunObj
-    :return str output_name: Name for the output file
+    
+    :return str output_name: Name for the output file.
     """    
     
     # Code flow:
@@ -97,36 +98,38 @@ def old_writing_datacube(geom, spectrom, dataset, output_name):
     prihdr["CTYPE2"] = "DEC--TAN"
     prihdr["RA"] = 0.
     prihdr["DEC"] = 0.
-    # What is this?? For cubes and maps as well?????
+    # Observation coordinate information
     prihdr["RADECSYS"] = "FK5"
-    prihdr["EQUINOX"] = 2000.   # Is this correct?? What is it for??
+    prihdr["EQUINOX"] = 2000.   
     hdulist.writeto(output_name, clobber=True)
 
-# For the time being, I store everything in physical units, so there
-# is no need to supply/store a redshift
+
 
 
 def writing_datacube(geom, spectrom, run, dataset):
     """
-    Create and write the output file in FITS format of the processed cube.
+    Create and write the output file in FITS format of the cube processed.
+    Write the main information of the realistic mock observation (stored 
+    in *geom*, *spectrom *and *run*) in the file header.
     
-    :param geom:  geom object
+    :param geom:  geom object.
     :type geom: aurora.configuration.GeometryObj
-    :param spectrom:  spectrom object
+    :param spectrom:  spectrom object.
     :type spectrom: aurora.configuration.SpectromObj
-    :param run:  run object
+    :param run:  run object.
     :type run: aurora.configuration.RunObj
-    :param array dataset: Cube processed
+    :param dataset: Processed cube. 
+    :type dataset: 3D array
     """
     
-    # Code flow:
+    # Code clow
     # =====================
     # > Create the FITS file with the processed cube
     # > Write main information in FITS file header
     # > Save the final FITS file in the dir and with the supplied name
     hdu = fits.PrimaryHDU(dataset)
     hdulist = fits.HDUList([hdu])
-    prihdr = hdu.header()
+    prihdr = hdu.header
     prihdr["NAXIS"] = 3
     prihdr["NAXIS3"] = spectrom.spectral_dim
     prihdr["BUNIT"] = "ERG.S^-1.cm^-2.KM^-1.S"
@@ -171,14 +174,18 @@ def writing_datacube(geom, spectrom, run, dataset):
     hdulist.close()
 
 
-def writing_maps(m, dataset, datatype, output_name):
+def writing_maps(cube, dataset, datatype, output_name):
     """
     Create and write the output file in FITS format of the processed map.
+    Write the main information of the processed map (stored in *cube*) 
+    in the file header.
 
-    :param m: datacube. 
-    :type m: aurora.datacube.DatacubeObj
-    :param array dataset: Map
-    :param str datatype: Map type ("flux", "velocity", "dispersion")
+    :param cube: datacube. It has stored the data cube the main information 
+                           of the realistic mock observation. 
+    :type cube: aurora.datacube.DatacubeObj
+    :param dataset: Map.
+    :type dataset: 2D array
+    :param str datatype: Map type ("flux", "velocity", "dispersion").
     :param str output_name: Name for the output file
     """
     
@@ -197,33 +204,33 @@ def writing_maps(m, dataset, datatype, output_name):
         prihdr["BUNIT"] = "KM.S^-1"
     elif datatype == "dispersion":
         prihdr["BUNIT"] = "KM.S^-1"
-    prihdr["NAXIS1"] = m.spatial_dim
-    prihdr["NAXIS2"] = m.spatial_dim
+    prihdr["NAXIS1"] = cube.spatial_dim
+    prihdr["NAXIS2"] = cube.spatial_dim
     prihdr["BSCALE"] = 1.0
     prihdr["BZERO"] = 0
     prihdr["CTYPE1"] = "X_POS"
     prihdr["CTYPE2"] = "Y_POS"
-    prihdr["CDELT1"] = m.pixsize.to("pc").value
-    prihdr["CDELT2"] = m.pixsize.to("pc").value
-    prihdr["CD1_1"] = m.pixsize.to("pc").value
+    prihdr["CDELT1"] = cube.pixsize.to("pc").value
+    prihdr["CDELT2"] = cube.pixsize.to("pc").value
+    prihdr["CD1_1"] = cube.pixsize.to("pc").value
     prihdr["CD1_2"] = 0.
     prihdr["CD2_1"] = 0.
-    prihdr["CD2_2"] = m.pixsize.to("pc").value
-    prihdr["CRVAL1"] = m.position_ref.to("pc").value
-    prihdr["CRVAL2"] = m.position_ref.to("pc").value
+    prihdr["CD2_2"] = cube.pixsize.to("pc").value
+    prihdr["CRVAL1"] = cube.position_ref.to("pc").value
+    prihdr["CRVAL2"] = cube.position_ref.to("pc").value
     prihdr["CUNIT1"] = "PC"
     prihdr["CUNIT2"] = "PC"
-    prihdr["CRPIX1"] = (m.pixel_ref + 1, "Center of the first pixel is (1,1)")
-    prihdr["CRPIX2"] = (m.pixel_ref + 1, "Center of the first pixel is (1,1)")
-    prihdr["SIMULAT"] = (m.header["SIMULAT"], "Parent Simulation")
-    prihdr["SNAPSHOT"] = m.header["SNAPSHOT"]
-    prihdr["SNAP_REF"] = (m.header["SNAP_REF"],
+    prihdr["CRPIX1"] = (cube.pixel_ref + 1, "Center of the first pixel is (1,1)")
+    prihdr["CRPIX2"] = (cube.pixel_ref + 1, "Center of the first pixel is (1,1)")
+    prihdr["SIMULAT"] = (cube.header["SIMULAT"], "Parent Simulation")
+    prihdr["SNAPSHOT"] = cube.header["SNAPSHOT"]
+    prihdr["SNAP_REF"] = (cube.header["SNAP_REF"],
                           "Reference frame for geom. transf.")
-    prihdr["THETA"] = (m.header["THETA"], "Inclination angle in DEG")
-    prihdr["PHI"] = (m.header["PHI"], "Position angle in DEG")
-    prihdr["Z_REF"] = (m.header["Z_REF"],
+    prihdr["THETA"] = (cube.header["THETA"], "Inclination angle in DEG")
+    prihdr["PHI"] = (cube.header["PHI"], "Position angle in DEG")
+    prihdr["Z_REF"] = (cube.header["Z_REF"],
                        "Redshift used to model HII fraction")
-    prihdr["SPAT_RES"] = (m.header["SPAT_RES"], "Spatial resolution in [kpc]")
-    prihdr["SPEC_RES"] = (m.header["SPEC_RES"], "Spectral resolution, R")
+    prihdr["SPAT_RES"] = (cube.header["SPAT_RES"], "Spatial resolution in [kpc]")
+    prihdr["SPEC_RES"] = (cube.header["SPEC_RES"], "Spectral resolution, R")
     hdulist.writeto(output_name, clobber=True)
     hdulist.close()
