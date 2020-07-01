@@ -113,7 +113,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     Compute the H-alpha emission of a bunch of particles and project it
     to a 4D grid, keeping contributions from different scales separated
 
-    :param geom: geom object.
+    :param geom: Instance of the class GeometryObj.
     :type geom: aurora.configuration.GeometryObj
     :param run: run object.
     :type run: aurora.configuration.RunObj
