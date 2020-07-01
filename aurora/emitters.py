@@ -64,12 +64,13 @@ class Emitters:
         """
         
         self.get_alphaH()
+        luminosity = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH
         if mode == "square":
-            Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH 
+            Halpha_lum = luminosity 
         elif mode == "linear":
-            Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH / (self.dens_ion.value)
+            Halpha_lum = luminosity / (self.dens_ion.value)
         elif mode == "root":
-            Halpha_lum = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH / (self.dens_ion.value**1.5)
+            Halpha_lum = luminosity / (self.dens_ion.value**1.5)
         self.Halpha_lum = Halpha_lum.to("erg s**-1")
 
         if density_cut=="Not":
