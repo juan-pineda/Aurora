@@ -26,27 +26,6 @@ class Emitters:
         self.smooth = np.array(data_gas["smooth"].in_units("kpc"))*unit.kpc
         self.u = np.array(data_gas["u"].in_units("cm**2 s**-2"))*unit.cm**2/unit.s**2
 
-    def density_cut(self, density_threshold = "Not", equivalent_luminosity = "min"):
-        if density_threshold == "Not":
-            print("Nothing to cut")
-        elif density_threshold == "polytrope":
-            print("polytropic cut to be implemented")
-            logdens = np.log10(self.dens.to("6.77e-23 g cm**-3").value)
-            logtemp = np.log10(self.temp.to("K").value)
-            tokill = ((logdens > logtemp - 3.5) & (logdens > 0.7))
-            if equivalent_luminosity == "min":
-                self.Halpha_lum[tokill] = np.min(self.Halpha_lum)
-            else:
-                self.Halpha_lum[tokill] = np.float(equivalent_luminosity) * unit.erg * unit.s**-1
-        else:
-            thresh = 10**np.float(density_threshold)
-            print("Cutting a threshold: ",thresh)
-            tokill = (self.dens.to("6.77e-23 g cm**-3").value > thresh)
-            if equivalent_luminosity == "min":
-                self.Halpha_lum[tokill] = np.min(self.Halpha_lum)
-            else:
-                self.Halpha_lum[tokill] = np.float(equivalent_luminosity) * unit.erg * unit.s**-1
-
     # Derived physical quantities
     def get_state(self):
         """
@@ -75,6 +54,27 @@ class Emitters:
         elif mode == "root":
             Halpha_lum = luminosity / (self.dens_ion.value**1.5)
         self.Halpha_lum = Halpha_lum.to("erg s**-1")
+
+    def density_cut(self, density_threshold = "Not", equivalent_luminosity = "min"):
+        if density_threshold == "Not":
+            print("Nothing to cut")
+        elif density_threshold == "polytrope":
+            print("polytropic cut to be implemented")
+            logdens = np.log10(self.dens.to("6.77e-23 g cm**-3").value)
+            logtemp = np.log10(self.temp.to("K").value)
+            tokill = ((logdens > logtemp - 3.5) & (logdens > 0.7))
+            if equivalent_luminosity == "min":
+                self.Halpha_lum[tokill] = np.min(self.Halpha_lum)
+            else:
+                self.Halpha_lum[tokill] = np.float(equivalent_luminosity) * unit.erg * unit.s**-1
+        else:
+            thresh = 10**np.float(density_threshold)
+            print("Cutting a threshold: ",thresh)
+            tokill = (self.dens.to("6.77e-23 g cm**-3").value > thresh)
+            if equivalent_luminosity == "min":
+                self.Halpha_lum[tokill] = np.min(self.Halpha_lum)
+            else:
+                self.Halpha_lum[tokill] = np.float(equivalent_luminosity) * unit.erg * unit.s**-1
 
     def get_vel_dispersion(self):
         sigma = np.sqrt(ct.k_B * self.temp / (self.mu * ct.m_p))
