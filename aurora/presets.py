@@ -37,10 +37,10 @@ default_values["spectrom"] = {
     "redshift_ref": [0.],
     "kernel_scale": [1.],
     "lum_dens_relation": ["square"],
-    "density_cut": ["Not"]
+    "density_threshold": ["Not"],
+    "equivalent_luminosity": ["min"]
 
 }
-
 
 Instruments = {}
 
