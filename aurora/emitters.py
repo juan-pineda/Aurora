@@ -29,9 +29,10 @@ class Emitters:
     # Derived physical quantities
     def get_state(self):
         """
-        Calculate the temperature, HII, mu and ions density of a bunch
+        Calculate the temperature, the amount of ionized hydrogen, mu and ions density of a bunch
         of particles using the main physical quantitties in the 
         simulation.
+               
         """
         self.get_temp()
         self.get_HII()
@@ -40,9 +41,18 @@ class Emitters:
 
     def get_luminosity(self, mode):
         """
-        Calculate the temperature, HII, mu and ions density of a bunch
-        of particles using the main physical quantitties in the 
-        simulation.
+        Calculate the H-alpha emission for each particle.
+        
+        Parameters
+        ----------
+        mode : str
+            Stablish the density dependence for H-alpha emission
+            calculation. Can be 'square', 'linear' or 'root'.
+        
+        Returns
+        -------
+        Halpha_lum: astropy.units.quantity.Quantity
+            H-alpha emission in (erg s**-1) for a bunch of particles.
         """
         
         self.get_alphaH()
@@ -56,6 +66,28 @@ class Emitters:
         self.Halpha_lum = Halpha_lum.to("erg s**-1")
 
     def density_cut(self, density_threshold = "Not", equivalent_luminosity = "min"):
+        """
+        Replaces the H-alpha emission for an equivalent luminosity, for certain
+        gas particles that exceed the established density threshold.
+        
+        Parameters
+        ----------
+        density_threshold : str or float, optional
+            For 'polytrope' the density cut function will apply a threshold
+            for the density of particles based on the polytrope equation.
+            For a float value, the density threshold will be calculated using
+            the float input as a power of ten and (6.77e-23 g cm**-3) as units.
+        equivalent_luminosity: str or float, optional
+            For 'min' the equivalent luminosity will be set as the minimun value
+            of the H-alpha emission. For a float value, the equivalent
+            luminosity will be set as the float input in (erg s**-1).
+            
+        Returns
+        -------
+        Halpha_lum: astropy.units.quantity.Quantity
+            H-alpha emission in (erg s**-1) for a bunch of particles.
+        """
+        
         if density_threshold == "Not":
             print("Nothing to cut")
         elif density_threshold == "polytrope":
@@ -115,6 +147,18 @@ class Emitters:
     # recombination rate coefficient - Osterbrock & Ferland (2006)
     # effective recombination rate when temperature is accounted for
     def get_alphaH(self):
+        """
+        Calculate the case-B Hydrogen effective recombination rate coefficient,
+        taking in to account the temperature of each particle - Osterbrock & 
+        Ferland (2006).
+        
+        Returns
+        -------
+        alphaH: astropy.units.quantity.Quantity
+            Hydrogen effective recombination rate coefficient in (cm3/s) for a 
+            bunch of particles.
+        """
+        
         self.alphaH = ct.alphaH.to("cm3/s")*(self.temp.to("K").value / 1.0e4)**-0.845
 
     # Retain only line centers/broadenings for particles in this group,

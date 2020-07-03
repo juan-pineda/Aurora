@@ -16,21 +16,29 @@ from . import convolutions as cv
 def __project_all_chunks(geom, run, spectrom, data_gas):
     """
     Split gas particles into several chunks according to *nvector* and
-    compute the projected flux one by one. The resulting structure is 4D
-    
-    :param geom: geom object.
-    :type geom: aurora.configuration.GeometryObj
-    :param run: run object.
-    :type run: aurora.configuration.RunObj
-    :param spectrom: spectrom object.
-    :type spectrom: aurora.configuration.SpectromObj
-    :param data_gas: Gas array containing gas particles
-    identified in the input archive.
-    :type data_gas: pynbody.snapshot.FamilySubSnap
-    :return cube: 4D-array, contains the fluxes at each
-    pixel and velocity channel produced by the gas 
-    particles with a given smoothing lengths separately. 
-    :type cube: numpy.ndarray    
+    compute the projected flux one by one. The resulting structure is a
+    4D-array.
+
+    Parameters
+    ----------
+    geom : aurora.configuration.GeometryObj
+        Instance of class GeometryObj whose attributes make geometric 
+        properties available. See definitions in configuration.py.
+    run : aurora.configuration.RunObj
+        Instance of class RunObj whose attributes make code computational
+        performance properties available. See definitions in
+        configuration.py.
+    spectrom : aurora.configuration.SpectromObj
+        Instance of class SpectromObj whose attributes make instrumental
+        properties available. See definitions in configuration.py.
+    data_gas : pynbody.snapshot.IndexedSubSnap 
+        Gas particles identified in the input archive.
+
+    Returns
+    -------
+    cube : ndarray (4D)
+        Contains the fluxes at each pixel and velocity channel produced
+        by the gas particles with a given smoothing lengths separately.
     """
 
     # Code flow:
@@ -71,22 +79,31 @@ def get_cube_in_sequential(geom, run, spectrom, data_gas, nchunk):
     """
     Determine the availability of RAM memory to carry out the flow
     projection process, and sets the upper and lower limits on gas 
-    particles according to *nchunks*
+    particles according to *nchunks*.
 
-    :param geom: geom object.
-    :type geom: aurora.configuration.GeometryObj
-    :param run: run object.
-    :type run: aurora.configuration.RunObj
-    :param spectrom: spectrom object.
-    :type spectrom: aurora.configuration.SpectromObj
-    :param data_gas: Gas array containing gas particles
-    identified in the input archive.
-    :type data_gas: pynbody.snapshot.FamilySubSnap
-    :param int nchunk: number of chunks to divide the gas particles.
-    :return cube: 4D-array, contains the fluxes at each
-    pixel and velocity channel produced by the gas 
-    particles with a given smoothing lengths separately. 
-    :type cube: numpy.ndarray
+    Parameters
+    ----------
+    geom : aurora.configuration.GeometryObj
+        Instance of class GeometryObj whose attributes make geometric 
+        properties available. See definitions in configuration.py.
+    run : aurora.configuration.RunObj
+        Instance of class RunObj whose attributes make code computational
+        performance properties available. See definitions in
+        configuration.py.
+    spectrom : aurora.configuration.SpectromObj
+        Instance of class SpectromObj whose attributes make instrumental
+        properties available. See definitions in configuration.py.
+    data_gas : pynbody.snapshot.IndexedSubSnap 
+        Gas particles identified in the input archive.
+    nchunk : int
+        Number of chunks to divide the gas particles.
+        
+    Returns
+    -------
+    cube : ndarray (4D)
+        Contains the fluxes at each pixel and velocity channel 
+        produced by the gas particles with a given smoothing
+        lengths separately.
     """
     
     cube_side, n_ch = spectrom.cube_dims()
@@ -111,24 +128,32 @@ def get_cube_in_sequential(geom, run, spectrom, data_gas, nchunk):
 def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     """
     Compute the H-alpha emission of a bunch of particles and project it
-    to a 4D grid, keeping contributions from different scales separated
+    to a 4D grid, keeping contributions from different scales separated.
 
-    :param geom: Instance of the class GeometryObj.
-    :type geom: aurora.configuration.GeometryObj
-    :param run: run object.
-    :type run: aurora.configuration.RunObj
-    :param spectrom: spectrom object.
-    :type spectrom: aurora.configuration.SpectromObj
-    :param data_gas: Gas array containing gas particles
-    identified in the input archive.
-    :type data_gas: pynbody.snapshot.FamilySubSnap
-    :param *args: number of chunks to divide the gas
-    particles, or list of gas particles to be projected.
-    :type *args: list, numpy.ndarray
-    :return cube: 4D-array, contains the fluxes at each
-    pixel and velocity channel produced by the gas 
-    particles with a given smoothing lengths separately. 
-    :type cube: numpy.ndarray
+    Parameters
+    ----------
+    geom : aurora.configuration.GeometryObj
+        Instance of class GeometryObj whose attributes make geometric 
+        properties available. See definitions in configuration.py.
+    run : aurora.configuration.RunObj
+        Instance of class RunObj whose attributes make code computational
+        performance properties available. See definitions in
+        configuration.py.
+    spectrom : aurora.configuration.SpectromObj
+        Instance of class SpectromObj whose attributes make instrumental
+        properties available. See definitions in configuration.py.
+    data_gas : pynbody.snapshot.IndexedSubSnap 
+        Gas particles identified in the input archive.
+    *args : int or array
+        Number of chunks to divide the gas particles, or the list of
+        the upper and lower limits of the gas particles to be projected.
+    
+    Returns
+    -------
+    cube : ndarray (4D)
+        Contains the fluxes at each pixel and velocity channel 
+        produced by the gas particles with a given smoothing
+        lengths separately.
     """
     
     cube_side, n_ch = spectrom.cube_dims()
@@ -140,16 +165,11 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     else:
         start, stop, cube = args
 
-#    if geom.redshift > 0:
-#        dl = geom.dl.to("cm").value
-#    else:
-#        dl = geom.dl.to("pc").value
-
     # This object allows to calculate the Halpha flux, and line broadening
     em = emit.Emitters(data_gas[start:stop], spectrom.redshift_ref)
     em.get_state()
-    em.get_luminosity(spectrom.lum_dens_rel) # new feature in test !!!
-    em.density_cut(spectrom.density_threshold, spectrom.equivalent_luminosity) # new feature in test !!!
+    em.get_luminosity(spectrom.lum_dens_rel)
+    em.density_cut(spectrom.density_threshold, spectrom.equivalent_luminosity)
     em.get_vel_dispersion()
 
     x, y, index = spectrom.position_in_pixels(em.x,em.y)
