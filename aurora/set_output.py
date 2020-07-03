@@ -1,5 +1,7 @@
 """
-.. py:module:: set_output
+========
+set_output
+======== 
 
 Methods to prepare the output files of the processed cubes.
 """
@@ -18,12 +20,20 @@ def set_output_filename(geom, run):
     """
     Set output name and tries to create the necessary directories recursively.
     
-    :param geom:  geom object.
-    :type geom: aurora.configuration.GeometryObj
-    :param run:  run object.
-    :type run: aurora.configuration.RunObj
-    
-    :return str output_name: Name for the output file.
+    Parameters
+    ----------
+    geom : aurora.configuration.GeometryObj
+        Instance of class GeometryObj whose attributes make geometric 
+        properties available. See definitions in configuration.py.
+    run : aurora.configuration.RunObj
+        Instance of class RunObj whose attributes make code computational
+        performance properties available. See definitions in
+        configuration.py.
+        
+    Returns
+    -------
+    output_name : str
+        Name for the output file.
     """    
     
     # Code flow:
@@ -112,14 +122,21 @@ def writing_datacube(geom, spectrom, run, dataset):
     Write the main information of the realistic mock observation (stored 
     in *geom*, *spectrom *and *run*) in the file header.
     
-    :param geom:  geom object.
-    :type geom: aurora.configuration.GeometryObj
-    :param spectrom:  spectrom object.
-    :type spectrom: aurora.configuration.SpectromObj
-    :param run:  run object.
-    :type run: aurora.configuration.RunObj
-    :param dataset: Processed cube. 
-    :type dataset: 3D array
+    Parameters
+    ----------
+    geom : aurora.configuration.GeometryObj
+        Instance of class GeometryObj whose attributes make geometric 
+        properties available. See definitions in configuration.py.
+    run : aurora.configuration.RunObj
+        Instance of class RunObj whose attributes make code computational
+        performance properties available. See definitions in
+        configuration.py.
+    spectrom : aurora.configuration.SpectromObj
+        Instance of class SpectromObj whose attributes make instrumental
+        properties available. See definitions in configuration.py.
+    dataset : ndarray (3D)
+        Processed cube. Contains the fluxes at each pixel and velocity 
+        channel produced by the gas particles.
     """
     
     # Code clow
@@ -179,14 +196,19 @@ def writing_maps(cube, dataset, datatype, output_name):
     Create and write the output file in FITS format of the processed map.
     Write the main information of the processed map (stored in *cube*) 
     in the file header.
-
-    :param cube: datacube. It has stored the data cube the main information 
-                           of the realistic mock observation. 
-    :type cube: aurora.datacube.DatacubeObj
-    :param dataset: Map.
-    :type dataset: 2D array
-    :param str datatype: Map type ("flux", "velocity", "dispersion").
-    :param str output_name: Name for the output file
+    
+    
+    Parameters
+    ----------
+    cube : aurora.datacube.DatacubeObj
+        Instance of class DatacubeObj whose attributes make code computational
+        performance properties available. See definitions in datacube.py
+    dataset : ndarray (2D)
+        Map generated to write.
+    datatype : str
+        Map type ("flux", "velocity", "dispersion").
+    output_name : str
+        Name for the output file.
     """
     
     # Code flow:

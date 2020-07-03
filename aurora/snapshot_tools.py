@@ -1,8 +1,12 @@
 """
-.. py:module:: snapshot_tools
+========
+snapshot_tools
+========
 
 Methods that prepare the snapshot to build the synthetic cube.
 """
+
+
 
 import gc
 import sys
@@ -18,10 +22,16 @@ def read_snap(input_file):
     """
     Reads the simulation snapshot file.
     
-    :param str input_file: File name.
+    Parameters
+    ----------
+    input_file : str
+        Snapshot file name. It can be a simulation file RAMSES or GADGET.
     
-    :return data: data snapshot file.
-    :type data: pynbody.snapshot.
+    Returns
+    -------
+    data : pynbody.snapshot
+        All data of the snapshot file. Includes the header information and particle
+        information in the simulation.
     """
     
     try:
@@ -38,17 +48,22 @@ def filter_array(data, prop, mini, maxi, units):
     For a given array, and a given property (key), it drops all data outside some
     provided boundaries.
     
-    :param data: Array to filter.
-    :type data: pynbody.snapshot.FamilySubSnap
-    :param prop: Propierty (key).
-    :type prop: list[str] or str.
-    :param mini: Lower boundaries.
-    :type mini: list[int, float], floar or int
-    :param maxi: Upper boundaries.
-    :type maxi: list[int, float], floar or int
     
-    :return output: Filtered array.
-    :type output: pynbody.snapshot.FamilySubSnap
+    Parameters
+    ---------_    
+    data : pynbody.snapshot.FamilySubSnap 
+        Array of particles (*gas*, *star*, *dark matter*) to filter. 
+     prop : list[str] or str
+        Property (key) on which the filter is applied.
+    mini : list[int, float], floar or int
+        Lower boundaries.
+    maxi : list[int, float], floar or int
+        Upper boundaries.
+        
+    Returns
+    -------
+    output : pynbody.snapshot.FamilySubSnap
+        Filtered particle array.
     """
    
     if type(prop) == list:
@@ -72,10 +87,14 @@ def set_hsml_limits(run, data_gas):
     If the smoothing lengths are greater than 20, the *nfft* and 
     *fft_hsml_min* must be defined.
     
-    :param run: run object
-    :type run: aurora.configuration.RunObj
-    :param data_gas: Gas array.
-    :type data_gas: pynbody.snapshot.FamilySubSnap
+    Parameters
+    ----------
+    run : aurora.configuration.RunObj
+        Instance of class RunObj whose attributes make code computational
+        performance properties available. See definitions in
+        configuration.py.
+    data_gas : pynbody.snapshot.IndexedSubSnap 
+        Gas particles identified in the input file.
     """
     
     # Code flow:
@@ -102,19 +121,27 @@ def set_snapshots_ready(geom, run, data):
     three types (*star*, *gas* and *dark matter*) and filter gas data 
     if specified.
     
-    :param geom: geom object.
-    :type geom: aurora.configuration.GeometryObj
-    :param run: run object.
-    :type run: aurora.configuration.RunObj
-    :param data: data snapshot file.
-    :type data: pynbody.snapshot
+    Parameters
+    ----------
+    geom : aurora.configuration.GeometryObj
+        Instance of class GeometryObj whose attributes make geometric 
+        properties available. See definitions in configuration.py.
+    run : aurora.configuration.RunObj
+        Instance of class RunObj whose attributes make code computational
+        performance properties available. See definitions in
+        configuration.py.
+    data : pynbody.snapshot
+        All data of the snapshot file. Includes the header information and particle
+        information in the simulation.
     
-    :return data_gas: Gas array.
-    :type data_gas: pynbody.snapshot.FamilySubSnap
-    :return data_star: Star array.
-    :type data_star: pynbody.snapshot.FamilySubSnap
-    :return data_dm: Dark matter array.
-    :type data_dm: pynbody.snapshot.FamilySubSnap
+    Returns
+    -------
+    data_gas : pynbody.snapshot.IndexedSubSnap 
+        Gas particles identified in the input file.
+    data_star : pynbody.snapshot.IndexedSubSnap 
+        Star particles identified in the input file.
+    data_dm : pynbody.snapshot.IndexedSubSnap 
+        Dark matter particles identified in the input file.
     """
     
     # Code flow:

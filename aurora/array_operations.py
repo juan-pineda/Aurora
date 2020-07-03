@@ -3,19 +3,26 @@ import logging
 import numpy as np
 from scipy import ndimage
 
-
 def bin_array(x, n, axis=0):
     """
     Bin the elements in one direction of a 2D or 3D array.
     
-    :param x: Array to be binned.
-    :type x: numpy.ndarray
-    :param int n: Binning factor, i.e, number of elements to be added together
-                  must be a divisor of the number of elements on the axis.
-    :param int axis: Axis along which the binning operation takes place.
+    Parameters
+    ----------
+    input_file : str
+        Snapshot file name. It can be a simulation file RAMSES or GADGET.
+    x : ndarray (3D or 2D)
+        Array to be binned. 
+    n : int
+        Binning factor, i.e, number of elements to be added together
+        must be a divisor of the number of elements on the axis.
+    axis : int 
+        Axis along which the binning operation takes place.
     
-    :return array: Binned Array.
-    :type array: numpy.ndarray
+    Returns
+    -------
+    array : ndarray (3D or 2D)
+        Binned Array.
     """
 
     # Code flow:
@@ -46,12 +53,17 @@ def cube_resampling(cube, new_cube):
     Interpolate a 3D master datacube to new spatial/spectral coordinates
     at once.
     
+    Parameters
+    ----------
+    cube : aurora.datacube.DatacubeObj
+        Old datacube. Instance of class DatacubeObj whose attributes make 
+        code computational performance properties available. See definitions
+        in datacube.py
     
-    :param cube: Old datacube. 
-    :type cube: aurora.datacube.DatacubeObj
-    :param new_cube: New datacube. Must store information about 
-                     spatial/spectral coordinates.
-    :type new_cube: aurora.datacube.DatacubeObj
+    new_cube : aurora.datacube.DatacubeObj
+        New datacube. Must store information about spatial/spectral coordinates.
+        Instance of class DatacubeObj whose attributes make code computational 
+        performance properties available. See definitions in datacube.py
     """
     
     # Code flow:

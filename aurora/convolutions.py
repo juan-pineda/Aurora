@@ -1,40 +1,10 @@
 import numpy as np
+import logging
+
 import astropy.convolution
 from bisect import bisect_left
-from . import convolutions as cv
+
 from . import constants as ct
-
-
-
-def fft_spatial_convolution(cube, psf_fwhm):
-    # Get cube dimensions and create the psf
-    x, y, z = cube.shape
-    psf = create_psf(psf_fwhm)
-
-    fshape = next_fast_len(y + psf.shape[0])
-    center = fshape - (fshape+1) // 2
-    new_psf = np.zeros([1, fshape, fshape])
-    index = slice(center - psf.shape[0] // 2, center + (psf.shape[0] + 1) // 2)
-    new_psf[0,index, index] = psf
-
-    psf = np.fft.fftshift(new_psf)
-    psf = np.fft.rfft2(psf)
-
-    index = slice(center - y // 2, center + (y + 1) // 2)
-
-    lead_zeros = np.zeros([x, center - y // 2, z])
-    trail_zeros = np.zeros([x, fshape - y - lead_zeros.shape[1], z])
-    cube = np.concatenate((lead_zeros, cube, trail_zeros), axis=1)
-    lead_zeros = np.zeros([x, y, center - z // 2])
-    trail_zeros = np.zeros([x, y, fshape - lead_zeros.shape[2] - z])
-    cube = np.concatenate((lead_zeros, cube, trail_zeros), axis=2)
-
-    cube = np.fft.rfft2(cube)
-    cube = cube * psf
-    cube = np.fft.irfft2(cube)
-    cube = cube[:, index, index]
-
-    return cube
 
 
 # Aqui no puedo usar la funcion create_psf por que la normalizacion sobre la suma
@@ -70,41 +40,6 @@ def fft_spectral_convolution(m, psf_fwhm):
     m.cube = m.cube[index, :, :]
 
 
-def __spectral_convolution_iter(m, psf_fwhm):
-    psf_sigma = psf_fwhm / ct.fwhm_sigma
-    psf = astropy.convolution.Gaussian2DKernel(psf_sigma)
-    psf = np.array(psf)
-    center = int(psf.shape[0]/2)  # this is the position of the central line
-    psf[:, 0:center] = 0
-    psf[:, center+1:] = 0
-    psf = psf / psf.sum()
-
-    # Padding to a square;
-#    fshape = int(2**np.ceil(np.log2(np.max([m.cube.shape[0], m.cube.shape[1]])+psf.shape[0])))
-    fshape = next_fast_len(
-        np.max([m.cube.shape[0], m.cube.shape[1]])+psf.shape[0])
-    # This is the center of the enlarged array
-    center = fshape - (fshape+1) // 2
-
-    new_psf = np.zeros([fshape, fshape])
-    index = slice(center - psf.shape[0] // 2, center + (psf.shape[0] + 1) // 2)
-    new_psf[index, index] = psf
-    psf = np.fft.fftshift(new_psf)
-    psf = np.fft.rfft2(psf)
-
-    index_0 = slice(
-        center - m.cube.shape[0] // 2, center + (m.cube.shape[0] + 1) // 2)
-    index_1 = slice(
-        center - m.cube.shape[1] // 2, center + (m.cube.shape[1] + 1) // 2)
-
-    for i in range(m.cube.shape[2]):
-        channel = np.zeros([fshape, fshape])
-        channel[index_0, index_1] = m.cube[:, :, i]
-        channel = np.fft.rfft2(channel)
-        channel = channel * psf
-        channel = np.fft.irfft2(channel)
-        m.cube[:, :, i] = channel[index_0, index_1]  # NO ES CUADRADA !!! :O
-
 ####################################################################
 #
 # En au.spectrom_mock los metodos que siguen son los que uso;
@@ -119,40 +54,40 @@ def next_odd(x):
     else:
         return x+1
 
-def create_psf(psf_fwhm):
-    psf_sigma = psf_fwhm / ct.fwhm_sigma
-    psf = astropy.convolution.Gaussian2DKernel(psf_sigma, x_size= next_odd(20*psf_sigma), y_size=next_odd(20*psf_sigma))
-#    psf = astropy.convolution.Gaussian2DKernel(psf_sigma)
+def create_psf(spectom, scale_sigma, size = 20):
+    # Enlarge the kernel adding the effect of the PSF
+    if(spectrom.spatial_res_kpc > 0):
+        logging.info(f" (Including the effect of the PSF as well)")
+        psf_fwhm = spectrom.spatial_res_kpc.to(
+            "pc").value / spectrom.pixsize.to("pc").value
+        psf_sigma = psf_fwhm / ct.fwhm_sigma
+        logging.info(f"Size of the PSF in pixels = {round(psf_sigma, 1)}")
+        scale_sigma = np.sqrt(scale_sigma**2+psf_sigma**2)
+        logging.info(f"Combination kernel + PSF in pixels = {round(scale_sigma, 1)}")
+    psf = astropy.convolution.Gaussian2DKernel(scale_sigma,
+          x_size = next_odd(size * scale_sigma), y_size = next_odd(size * scale_sigma))
     psf = np.array(psf)
     psf = psf / psf.sum()
-    return psf
+    return (psf, scale_sigma)
 
-def spatial_convolution_iter(cube, psf_fwhm):
-    # Get cube dimensions and create the psf
-    x, y, z = cube.shape
-    psf = create_psf(psf_fwhm)
-    # Define the shape and center of the enlarged array
-    fshape = next_fast_len(y + psf.shape[0])
-    center = fshape - (fshape+1) // 2
-    # create a zero-padded psf with the new dimensions
-    new_psf = np.zeros([fshape, fshape])
-    index = slice(center - psf.shape[0] // 2, center + (psf.shape[0] + 1) // 2)
-    new_psf[index, index] = psf
-    # take the fft of the enlarged psf
-    psf = np.fft.fftshift(new_psf)
-    psf = np.fft.rfft2(psf)
-    # Define the index covering the psf data in the zero-padded version
-    index = slice(center - y //2, center + (y + 1) // 2)
-    # Perform a slice-by-slice spatial convolution
-    for i in range(x):
-        channel = np.zeros([fshape, fshape])
-        channel[index, index] = cube[i, :, :]
-        channel = np.fft.rfft2(channel)
-        channel = channel * psf
-        channel = np.fft.irfft2(channel)
-        cube[i, :, :] = channel[index, index]
+def spatial_astro_convolution(cube, psf):
+    n_ch = cube.shape[0]
+    for j in range(n_ch):
+        if (np.nanmax(cube[j, :, :]) == 0):
+            logging.info(f"No flux at this scale/velocity channel -> skip convolution")
+            continue
+        cube[j, :, :] = astropy.convolution.convolve(cube[j,:,:],psf)
     return cube
 
+def fft_spatial_astro_convolution(cube, psf):   
+    n_ch = cube.shape[0]
+    for j in range(n_ch):
+        if (np.nanmax(cube[j, :, :]) == 0):
+            logging.info(f"No flux at this scale/velocity channel -> skip convolution")
+            continue
+        cube[j, :, :] = astropy.convolution.convolve_fft(cube[j, :, :], psf, psf_pad = True, 
+                                                   fft_pad = True, allow_huge=True) 
+    return cube
 
 def next_fast_len(target):
     hams = (8, 9, 10, 12, 15, 16, 18, 20, 24, 25, 27, 30, 32, 36, 40, 45, 48,
@@ -211,7 +146,33 @@ def next_fast_len(target):
     return match
 
 
+def fft_spatial_convolution(cube, psf):
+    x, y, z = cube.shape
+    
+    fshape = next_fast_len(y + psf.shape[0])
+    center = fshape - (fshape+1) // 2
+    new_psf = np.zeros([1, fshape, fshape])
+    index = slice(center - psf.shape[0] // 2, center + (psf.shape[0] + 1) // 2)
+    new_psf[0,index, index] = psf
+    
+    psf = np.fft.fftshift(new_psf)
+    psf = np.fft.rfft2(psf)
+    
+    index = slice(center - y // 2, center + (y + 1) // 2)
+    
+    lead_zeros = np.zeros([x, center - y // 2, z])
+    trail_zeros = np.zeros([x, fshape - y - lead_zeros.shape[1], z])
+    cube = np.concatenate((lead_zeros, cube, trail_zeros), axis=1)
+    lead_zeros = np.zeros([x, cube.shape[1], center - z // 2])
+    trail_zeros = np.zeros([x, cube.shape[1], fshape - lead_zeros.shape[2] - z])
+    cube = np.concatenate((lead_zeros, cube, trail_zeros), axis=2)
 
+    cube = np.fft.rfft2(cube)
+    cube = cube * psf
+    cube = np.fft.irfft2(cube)
+    cube = cube[:, index, index]
+    
+    return cube
 
 
 
