@@ -12,6 +12,7 @@ class Emitters:
     simulation, and deriving other important physical quantites 
     from them.
     """
+    
     # Get the main physical quantities in the simulation, converting pynbody
     # instances to astropy ones, to assure compatibility across operations.
     def __init__(self, data_gas, redshift=None):
@@ -26,13 +27,22 @@ class Emitters:
         self.smooth = np.array(data_gas["smooth"].in_units("kpc"))*unit.kpc
         self.u = np.array(data_gas["u"].in_units("cm**2 s**-2"))*unit.cm**2/unit.s**2
 
-    # Derived physical quantities
     def get_state(self):
         """
-        Calculate the temperature, the amount of ionized hydrogen, mu and ions density of a bunch
-        of particles using the main physical quantitties in the 
-        simulation.
-               
+        Calculate the temperature, the fraction of ionized hydrogen, the average
+        molecular weight of ionized hydrogen and the ions number density of a 
+        bunch of particles using the main physical quantitties in the simulation.
+
+        Returns
+        -------
+        temp : astropy.units.quantity.Quantity
+            Temperature in (K) for a bunch of particles.
+        HII : ndarray
+            Fraction of ionized hydrogen for a bunch of particles.
+        mu : ndarray
+            Average molecular weight of ionized hydrogen for a bunch of particles.
+        dens_ion : astropy.units.quantity.Quantity
+            Ions number density in (cm**-3) for a bunch of particles.
         """
         self.get_temp()
         self.get_HII()
@@ -41,17 +51,19 @@ class Emitters:
 
     def get_luminosity(self, mode):
         """
-        Calculate the H-alpha emission for each particle.
+        Calculate the H-alpha emission for each particle in (erg s**-1), with
+        different ions number density dependence.
         
         Parameters
         ----------
         mode : str
-            Stablish the density dependence for H-alpha emission
-            calculation. Can be 'square', 'linear' or 'root'.
+            Stablish the ions density dependence for H-alpha 
+            emission calculation. Can be 'square', 'linear'
+            or 'root'.
         
         Returns
         -------
-        Halpha_lum: astropy.units.quantity.Quantity
+        Halpha_lum : astropy.units.quantity.Quantity
             H-alpha emission in (erg s**-1) for a bunch of particles.
         """
         
@@ -77,14 +89,14 @@ class Emitters:
             for the density of particles based on the polytrope equation.
             For a float value, the density threshold will be calculated using
             the float input as a power of ten and (6.77e-23 g cm**-3) as units.
-        equivalent_luminosity: str or float, optional
+        equivalent_luminosity : str or float, optional
             For 'min' the equivalent luminosity will be set as the minimun value
             of the H-alpha emission. For a float value, the equivalent
             luminosity will be set as the float input in (erg s**-1).
             
         Returns
         -------
-        Halpha_lum: astropy.units.quantity.Quantity
+        Halpha_lum : astropy.units.quantity.Quantity
             H-alpha emission in (erg s**-1) for a bunch of particles.
         """
         
@@ -109,26 +121,59 @@ class Emitters:
                 self.Halpha_lum[tokill] = np.float(equivalent_luminosity) * unit.erg * unit.s**-1
 
     def get_vel_dispersion(self):
+        """
+        Calculate the velocity dispersion of each particle in (cm s**-1), following the
+        Maxwell-Boltzmann distribution.
+
+        Returns
+        -------
+        dispersion : astropy.units.quantity.Quantity
+            Velocity dispersion in (cm s**-1) for a bunch of particles.
+        """
+        
         sigma = np.sqrt(ct.k_B * self.temp / (self.mu * ct.m_p))
         self.dispersion = sigma.to("cm s**-1")
 
     def get_temp(self):
         mu = np.ones(self.N)
-        for i in range(5):
+        for i in range(2):
             temp = (5./3 - 1) * mu * ct.m_p * self.u / ct.k_B
             mu = self.get_mean_weight(temp)
         self.temp = temp.decompose().to("K")
 
-    # Naive way of approximating the mean molecular weight
-    # this is CUSTOMIZED for Mirage project, for which there is no
-    # ElectroAbundance information stored !!!
     def get_mean_weight(self,temp):
+        """
+        Calculate the average molecular weight of ionized hydrogen of a bunch
+        of particles, as a naive aproximation CUSTOMIZED for Mirage project,
+        for which there is no electron abundance information stored.
+        
+        Parameters
+        ----------
+        temp : astropy.units.quantity.Quantity
+            Temperature in (K) for a bunch of particles.
+
+        Returns
+        -------
+        mu : ndarray
+            Average molecular weight of ionized hydrogen for a bunch of particles.
+        """
+        
         mu = np.ones(len(temp))
         mu[np.where(temp >= 1e4*unit.K)[0]] = 0.59
         mu[np.where(temp < 1e4*unit.K)[0]] = 1.3
         return mu
 
     def get_HII(self):
+        """
+        Calculate the fraction of ionized hydrogen of each particle, using the values
+        stored in the simulation or following the (Falta incluir el nombre dle procedimiento
+        del paper de Bird).
+
+        Returns
+        -------
+        HII : ndarray
+            Fraction of ionized hydrogen for a bunch of particles.
+        """
         if "HII" in self.data.keys():
             HII = self.data["HII"]
         else:
@@ -137,15 +182,34 @@ class Emitters:
         self.HII = HII
 
     def get_mu(self):
+        """
+        Calculate the average molecular weight of ionized hydrogen of a bunch
+        of particles, using the hydrogen cosmological fraction as a constant
+        and the fraction of ionized hydrogen of each particle.
+
+        Returns
+        -------
+        mu : ndarray
+            Average molecular weight of ionized hydrogen for a bunch of particles.
+        """
+        
         mu = 4. / (3*ct.Xh + 1 + 4*self.HII*ct.Xh)
         self.mu = mu
 
     def get_dens_ion(self):
+        """
+        Calculate the ions number density of a bunch of particles in (cm**-3) using
+        the hydrogen cosmological fraction as a constant, the fraction of ionized 
+        hydrogen and the density of each particle.
+
+        Returns
+        -------
+        dens_ion : astropy.units.quantity.Quantity
+            Ions number density in (cm**-3) for a bunch of particles.
+        """
+        
         self.dens_ion = (self.dens * self.HII * ct.Xh / ct.m_p)
 
-    # We use case-B Hydrogen effective
-    # recombination rate coefficient - Osterbrock & Ferland (2006)
-    # effective recombination rate when temperature is accounted for
     def get_alphaH(self):
         """
         Calculate the case-B Hydrogen effective recombination rate coefficient,
@@ -154,23 +218,48 @@ class Emitters:
         
         Returns
         -------
-        alphaH: astropy.units.quantity.Quantity
+        alphaH : astropy.units.quantity.Quantity
             Hydrogen effective recombination rate coefficient in (cm3/s) for a 
             bunch of particles.
         """
         
         self.alphaH = ct.alphaH.to("cm3/s")*(self.temp.to("K").value / 1.0e4)**-0.845
 
-    # Retain only line centers/broadenings for particles in this group,
-    # arranged in a matrix where each row is a particle, and columns
-    # will serve to store fluxes at each of the cube spectral channels, e.g,
-    # with n particles centered at l1, l2 ..., ln, line_center is:
-    # [ l1 l1 l1 ... l1
-    #   l2 l2 l2 ... l2
-    #   .  .  .  ...
-    #   .  .  .  ...
-    #   ln ln ln ... ln]
     def get_vect_lines(self, n_ch):
+        """
+        Array the velocity in Z axis as the line center, the velocity dispersion
+        as the line broadening and the H-alpha emission as the line flux, each one
+        stored in a matrix where each row is a particle, and columns will serve to
+        store fluxes at each of the cube spectral channels.
+        
+        Parameters
+        ----------
+        n_ch : int
+            Number of spectral channels.        
+        
+        Returns
+        -------
+        line_center : astropy.units.quantity.Quantity
+            Line center of the emision process of each particle, determined by the
+            velocity in Z axis.
+        line_sigma : astropy.units.quantity.Quantity
+            Broadening of the line in the emision process of each particle,
+            determined by the velocity dispersion.
+        line_flux : astropy.units.quantity.Quantity
+            Total flux produced in the emision process of each particle, determined
+            by the H-alpha emission.
+        
+        Examples
+        --------
+        With n particles centered at l1, l2 ..., ln, line_center is:
+        
+        [ l1 l1 l1 ... l1
+          l2 l2 l2 ... l2
+          .  .  .  ...
+          .  .  .  ...
+          ln ln ln ... ln]
+        """
+        
         line_center = np.transpose(np.tile(self.vz, (n_ch, 1)))
         line_sigma = np.transpose(np.tile(self.dispersion, (n_ch, 1)))
         line_flux = np.transpose(np.tile(self.Halpha_lum, (n_ch, 1)))
@@ -180,7 +269,6 @@ class Emitters:
         channel_center = np.tile(channels, (self.N, 1))
         channel_width = np.tile(width, (self.N, n_ch))
         return channel_center, channel_width
-
 
     def int_gaussian(self, x, dx, mu, sigma):
         """
