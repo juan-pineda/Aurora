@@ -83,4 +83,4 @@ def cube_resampling(cube, new_cube):
     new_channels = origin_spectral + np.arange(new_cube.spectral_dim)/channelratio
     X, Y, Z = np.meshgrid(new_positions, new_positions, new_channels)
     new_cube.cube = ndimage.map_coordinates(cube.cube, [Z, X, Y], order=1).T
-    new_cube.cube = new_cube.cube / (pixratio  * channelratio)**2
+    new_cube.cube = new_cube.cube / (pixratio**2 * channelratio)
