@@ -44,11 +44,25 @@ class Emitters:
         dens_ion : astropy.units.quantity.Quantity
             Ions number density in (cm**-3) for a bunch of particles.
         """
-        self.get_temp()
-        self.get_HII()
-        self.get_mu()
-        self.get_dens_ion()
-
+        
+        if "HII" in self.data.keys():
+            self.get_HII()
+            self.get_mu()
+            self.get_dens_ion()
+            self.get_temp()
+            if self.redshift != 0.:
+                self.get_Rahmati_HII()
+                self.get_dens_ion()
+            else:
+                pass
+        else:
+            self.get_all_params()
+            if self.redshift != 0.:
+                self.get_Rahmati_HII()
+                self.get_dens_ion()
+            else:
+                pass
+        
     def get_luminosity(self, mode):
         """
         Calculate the H-alpha emission for each particle in (erg s**-1), with
@@ -134,14 +148,37 @@ class Emitters:
         sigma = np.sqrt(ct.k_B * self.temp / (self.mu * ct.m_p))
         self.dispersion = sigma.to("cm s**-1")
 
-    def get_temp(self):
+    def get_all_params(self):
+        """
+        Calculate the temperature, the fraction of ionized hydrogen, the average
+        molecular weight of ionized hydrogen and the ions number density of a bunch
+        of particles, as a naive aproximation CUSTOMIZED for Mirage project,
+        for which there is no electron abundance information stored.
+
+        Returns
+        -------
+        temp : astropy.units.quantity.Quantity
+            Temperature in (K) for a bunch of particles.
+        HII : ndarray
+            Fraction of ionized hydrogen for a bunch of particles.
+        mu : ndarray
+            Average molecular weight of ionized hydrogen for a bunch of particles.
+        dens_ion : astropy.units.quantity.Quantity
+            Ions number density in (cm**-3) for a bunch of particles.
+        """
+        
         mu = np.ones(self.N)
-        for i in range(2):
+        dens_ion = np.ones(self.N)
+        for i in range(5):
             temp = (5./3 - 1) * mu * ct.m_p * self.u / ct.k_B
             mu = self.get_mean_weight(temp)
+            HII = self.get_fraction_ionazed_H(temp)
         self.temp = temp.decompose().to("K")
+        self.mu = mu
+        self.HII = HII
+        self.get_dens_ion()
 
-    def get_mean_weight(self,temp):
+    def get_mean_weight(self, temp):
         """
         Calculate the average molecular weight of ionized hydrogen of a bunch
         of particles, as a naive aproximation CUSTOMIZED for Mirage project,
@@ -162,23 +199,56 @@ class Emitters:
         mu[np.where(temp >= 1e4*unit.K)[0]] = 0.59
         mu[np.where(temp < 1e4*unit.K)[0]] = 1.3
         return mu
+    
+    def get_fraction_ionazed_H(self, temp):
+        """
+        Calculate fraction of ionized hydrogen of a bunch of particles, 
+        as a naive aproximation CUSTOMIZED for Mirage project, for which
+        there is no electron abundance information stored.
+        
+        Parameters
+        ----------
+        temp : astropy.units.quantity.Quantity
+            Temperature in (K) for a bunch of particles.
+
+        Returns
+        -------
+        dens_ion : astropy.units.quantity.Quantity
+            Ions number density in (cm**-3) for a bunch of particles.
+        """
+        
+        HII = np.ones(len(temp))
+        HII[np.where(temp >= 1e4*unit.K)[0]] = 1.
+        HII[np.where(temp < 1e4*unit.K)[0]] = 1.28644609e-05
+        return HII
 
     def get_HII(self):
         """
         Calculate the fraction of ionized hydrogen of each particle, using the values
-        stored in the simulation or following the (Falta incluir el nombre dle procedimiento
-        del paper de Bird).
+        stored in the simulation.
 
         Returns
         -------
         HII : ndarray
             Fraction of ionized hydrogen for a bunch of particles.
         """
-        if "HII" in self.data.keys():
-            HII = self.data["HII"]
-        else:
-            a = bird.GasProperties(self.redshift)
-            HII = 1 - a._neutral_fraction(ct.Xh * (self.dens.to("g cm**-3")/ct.m_p.to("g")).value, self.temp.value)
+    
+        HII = self.data["HII"]
+        self.HII = HII
+    
+    def get_Rahmati_HII(self):
+        """
+        Calculate the fraction of ionized hydrogen of each particle, using the procedure
+        exposed in (Rahmati et al 2012).
+
+        Returns
+        -------
+        HII : ndarray
+            Fraction of ionized hydrogen for a bunch of particles.
+        """
+
+        a = bird.GasProperties(self.redshift)
+        HII = 1 - a._neutral_fraction(ct.Xh * (self.dens.to("g cm**-3")/ct.m_p.to("g")).value, self.temp.value)
         self.HII = HII
 
     def get_mu(self):
@@ -195,7 +265,21 @@ class Emitters:
         
         mu = 4. / (3*ct.Xh + 1 + 4*self.HII*ct.Xh)
         self.mu = mu
+    
+    def get_temp(self):
+        """
+        Calculate the temperature of each particle in (K), using the internal
+        energy and the average molecular weight of ionized hydrogen.
 
+        Returns
+        -------
+        temp : astropy.units.quantity.Quantity
+            Temperature in (K) for a bunch of particles.
+        """
+        
+        temp = (5./3 - 1) * self.mu * ct.m_p * self.u / ct.k_B
+        self.temp = temp.decompose().to("K")  
+    
     def get_dens_ion(self):
         """
         Calculate the ions number density of a bunch of particles in (cm**-3) using
@@ -266,37 +350,98 @@ class Emitters:
         return line_center, line_sigma, line_flux
 
     def get_vect_channels(self, channels, width, n_ch):
+        """
+        Array the center and the width of each spectral channel, saving each of 
+        these properties in a matrix where each row is a particle, and columns
+        will serve to store the respective spectral channel information.
+        
+        Parameters
+        ----------
+        channels: astropy.units.quantity.Quantity
+            Central values for the spectral channels.
+        width: astropy.units.quantity.Quantity
+            Constant width for the spectral channels.
+        n_ch : int
+            Number of spectral channels.        
+        
+        Returns
+        -------
+        channel_center : astropy.units.quantity.Quantity
+            Spectral channel center for each particle.
+        channel_width : astropy.units.quantity.Quantity
+            Spectral channel width for each particle and for each spectral 
+            channel.
+        
+        Examples
+        --------
+        With n particles, m spectral channels and X constant width channel
+        value, channel_width is:
+        
+        [ (X)11 (X)12 (X)13 ... (X)1m
+          (X)21 (X)22 (X)23 ... (X)2m
+            .     .     .   ...
+            .     .     .   ...
+          (X)n1 (X)n2 (X)n3 ... (X)nm]
+        """
+        
         channel_center = np.tile(channels, (self.N, 1))
         channel_width = np.tile(width, (self.N, n_ch))
         return channel_center, channel_width
 
-    def int_gaussian(self, x, dx, mu, sigma):
+    def int_gaussian(self, x, dx, mean, sigma):
         """
-        Compute the integral of a normalized gaussian inside some limits.
-        The center and width
+        Compute the integral of a normalized gaussian inside some limits, using
+        parameters without units.
     
         Parameters
         ----------
-        x : float, array
-            central position of the interval.
-        dx : float, array
-        width of the interval.
-        mu: float, array
-            mean of the gaussian.
-        sigma: float, array
-            standard deviation.
+        x : float, ndarray
+            Central position of the interval.
+        dx : float, ndarray
+            Width of the interval.
+        mean : float, ndarray
+            Mean of the gaussian.
+        sigma : float, ndarray
+            Standard deviation.
+        
+        Returns
+        -------
+        value : float, ndarray
+            Value of the normalized gaussian integral inside the limits.
         """
 
-        A = special.erf((x+dx/2-mu)/np.sqrt(2)/sigma)
-        B = special.erf((x-dx/2-mu)/np.sqrt(2)/sigma)
-        return np.abs((A-B)/2)
+        A = special.erf((x+dx/2-mean)/np.sqrt(2)/sigma)
+        B = special.erf((x-dx/2-mean)/np.sqrt(2)/sigma)
+        value = np.abs((A-B)/2)
+        return value
 
     # Notice that, because *int_gaussian* integrates a normalized gaussian,
     # the units of the input parameters do not affect the result as far as all
     # of them are the same
-    def int_gaussian_with_units(self, x, dx, mu, sigma):
+    def int_gaussian_with_units(self, x, dx, mean, sigma):
+        """
+        Compute the integral of a normalized gaussian inside some limits, using
+        parameters with units.
+    
+        Parameters
+        ----------
+        x : float, ndarray
+            Central position of the interval.
+        dx : float, ndarray
+            Width of the interval.
+        mean : float, ndarray
+            Mean of the gaussian.
+        sigma : float, ndarray
+            Standard deviation.
+        
+        Returns
+        -------
+        inte : float, ndarray
+            Value of the normalized gaussian integral inside the limits.
+        """
+        
         dx = dx.to(x.unit)
-        mu = mu.to(x.unit)
+        mean = mean.to(x.unit)
         sigma = sigma.to(x.unit)
-        inte = self.int_gaussian(x.value, dx.value, mu.value, sigma.value)
+        inte = self.int_gaussian(x.value, dx.value, mean.value, sigma.value)
         return inte
