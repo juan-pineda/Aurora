@@ -144,7 +144,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         properties available. See definitions in configuration.py.
     data_gas : pynbody.snapshot.IndexedSubSnap 
         Gas particles identified in the input archive.
-    *args : int or array
+    *args : int, array_like
         Number of chunks to divide the gas particles, or the list of
         the upper and lower limits of the gas particles to be projected.
     

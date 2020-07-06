@@ -263,6 +263,27 @@ class SpectromObj():
         return cube_side, n_ch
 
     def position_in_pixels(self,x,y):
+        """
+        Calculate the position x and y in pixels and the positional index for
+        each particle.
+
+        Parameters
+        ----------
+        x : astropy.units.quantity.Quantity
+            Loaded position in X axis (Kpc) from CofigFile for each particle.
+        y : astropy.units.quantity.Quantity
+            Loaded position in Y axis (Kpc) from CofigFile for each particle.
+
+        Returns
+        -------
+        x : astropy.units.quantity.Quantity
+            Position in X axis (pixels) for each particle.
+        y : astropy.units.quantity.Quantity
+            Position in Y axis (pixels) for each particle.
+        index : astropy.units.quantity.Quantity
+            Positional index in pixels for each particle.
+        """
+        
         cube_side, n_ch = self.cube_dims()
         x = (x / self.pixsize).decompose()
         y = (y / self.pixsize).decompose()
