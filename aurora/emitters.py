@@ -82,13 +82,13 @@ class Emitters:
         """
         
         self.get_alphaH()
-        luminosity = (self.smooth)**3 * (self.dens_ion)**2 * (ct.h*ct.c/ct.Halpha0) * self.alphaH
+        luminosity = (self.smooth)**3 * (ct.h*ct.c/ct.Halpha0) * self.alphaH
         if mode == "square":
-            Halpha_lum = luminosity 
+            Halpha_lum = luminosity * (self.dens_ion)**2
         elif mode == "linear":
-            Halpha_lum = luminosity / (self.dens_ion.value)
+            Halpha_lum = luminosity * (self.dens_ion)
         elif mode == "root":
-            Halpha_lum = luminosity / (self.dens_ion.value**1.5)
+            Halpha_lum = luminosity * (self.dens_ion)**0.5
         self.Halpha_lum = Halpha_lum.to("erg s**-1")
 
     def density_cut(self, density_threshold = "Not", equivalent_luminosity = "min"):
@@ -172,7 +172,7 @@ class Emitters:
         for i in range(5):
             temp = (5./3 - 1) * mu * ct.m_p * self.u / ct.k_B
             mu = self.get_mean_weight(temp)
-            HII = self.get_fraction_ionazed_H(temp)
+            HII = self.get_fraction_ionized_H(temp)
         self.temp = temp.decompose().to("K")
         self.mu = mu
         self.HII = HII
@@ -196,11 +196,11 @@ class Emitters:
         """
         
         mu = np.ones(len(temp))
-        mu[np.where(temp >= 1e4*unit.K)[0]] = 0.59
-        mu[np.where(temp < 1e4*unit.K)[0]] = 1.3
+        mu[np.where(temp >= 1e4*unit.K)[0]] = 0.63
+        mu[np.where(temp < 1e4*unit.K)[0]] = 1.22
         return mu
     
-    def get_fraction_ionazed_H(self, temp):
+    def get_fraction_ionized_H(self, temp):
         """
         Calculate fraction of ionized hydrogen of a bunch of particles, 
         as a naive aproximation CUSTOMIZED for Mirage project, for which
@@ -219,7 +219,7 @@ class Emitters:
         
         HII = np.ones(len(temp))
         HII[np.where(temp >= 1e4*unit.K)[0]] = 1.
-        HII[np.where(temp < 1e4*unit.K)[0]] = 1.28644609e-05
+        HII[np.where(temp < 1e4*unit.K)[0]] = 0.
         return HII
 
     def get_HII(self):
