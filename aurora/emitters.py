@@ -152,8 +152,8 @@ class Emitters:
         """
         Calculate the temperature, the fraction of ionized hydrogen, the average
         molecular weight of ionized hydrogen and the ions number density of a bunch
-        of particles, as a naive aproximation CUSTOMIZED for Mirage project,
-        for which there is no electron abundance information stored.
+        of particles, as a first aproximation for input archives for which there is
+        no electron abundance information stored.
 
         Returns
         -------
@@ -181,8 +181,8 @@ class Emitters:
     def get_mean_weight(self, temp):
         """
         Calculate the average molecular weight of ionized hydrogen of a bunch
-        of particles, as a naive aproximation CUSTOMIZED for Mirage project,
-        for which there is no electron abundance information stored.
+        of particles, as a first aproximation for input archives for which 
+        there is no electron abundance information stored.
         
         Parameters
         ----------
@@ -203,8 +203,8 @@ class Emitters:
     def get_fraction_ionized_H(self, temp):
         """
         Calculate fraction of ionized hydrogen of a bunch of particles, 
-        as a naive aproximation CUSTOMIZED for Mirage project, for which
-        there is no electron abundance information stored.
+        as a first aproximation for input archives for which there is
+        no electron abundance information stored.
         
         Parameters
         ----------

@@ -1,19 +1,15 @@
 import os
 import re
 import sys
-import math
 import logging
 import numpy as np
 import configparser
-from astropy.io import fits
 from astropy import units as unit
 from astropy.cosmology import Planck13 as cosmo
 
 from . import presets
 from . import constants as ct
 from . import set_output as so
-from . import spectrum_tools as spec
-from . import array_operations as arr
 
 # This variable stores the names of the parameters that were not passed
 missing_params = []
@@ -27,12 +23,21 @@ def read_var(config_var, section, var, vartype, units=None):
 
     Parameters
     ----------
-    config_var : loaded ConfigFile
-    section : corresponding section on the ConfigFile
-    var : keyword to be loaded
-    vartype : specifies if the value is a float, int, bool, or str
-    units : (optional)
-        adds units to the value of the variable
+    config_var : str
+        Loaded ConfigFile.
+    section : str
+        Corresponding section on the ConfigFile.
+    var : str
+        Keyword to be loaded.
+    vartype : type
+        Specifies if the value is a float, int, bool, or str
+    units : astropy.units.core.Unit, optional
+        Adds units to the value of the variable
+
+    Returns
+    -------
+    output : str, type, astropy.units.core.Unit
+        Return the readed variable with its value and units.
     """
 
     # Code flow:
@@ -40,6 +45,7 @@ def read_var(config_var, section, var, vartype, units=None):
     # > Try to read the variable from the ConfigFile
     # > If not present, try to load a defaut value from the presets file
     # > If no default exists, the parameter is set to nan
+    
     try:
         if vartype == float:
             output = config_var.getfloat(section, var)
@@ -68,7 +74,8 @@ def read_var(config_var, section, var, vartype, units=None):
 class RunObj():
     """
     Group the main parameters regarding the computational aspects of the
-    run and additional information for the headers.
+    run, including the variables that determines the computational
+    performance of the code, and additional information for the headers.
     """
 
     def __init__(self):
@@ -76,7 +83,43 @@ class RunObj():
 
     def parse_input(self, ConfigFile):
         """
-        Extract the parameters from the section [run] of the ConfigFile
+        Extract the parameters from the section [run] of the ConfigFile.
+        
+        Parameters
+        ----------
+        ConfigFile : str
+            Loaded configuration file.
+        
+        Returns
+        -------
+        input_file : str
+            Path of the input file.
+        output_file : str
+            Path of the output file.
+        output_dir : str
+            Path of the output directory.
+        instrument : str
+            Keyword to generate the name output_dir if it was not
+            previously specified.
+        nvector : int
+            Number of particles to be projected simultaneously.
+        ncpu : int
+            Number of cores for parallel execution.
+        overwrite : bool
+            Allows overwriting an existing file when saving the output.
+        simulation_id : str
+            Keyword to be store in the FITS header as the parent
+            simulation identification.
+        snapshot_id : str
+            Keyword to be store in the FITS header as the snapshot
+            identification.
+        reference_id : str
+            Keyword to be store in the FITS header as the reference
+            frame identification for geometrical transformations.
+        nfft : int
+            Number of different scales of particles.
+        fft_hsml_min : astropy.units.core.Unit
+            Minimum size of particles in (pc).
         """
 
         run_config = configparser.SafeConfigParser({}, allow_no_value=True)
@@ -100,8 +143,10 @@ class RunObj():
 class GeometryObj():
     """
     Group the main parameters related to the geometrical orientation
-    adopted for the mock observations, and cuts to be applied to the
-    snapshot particles before projecting their properties.
+    adopted for the mock observations, operations to check them for
+    self consistency, cuts to be applied to the snapshot particles
+    before use their properties and operations to transform equivalent
+    properties in different units.
     """
 
     def __init__(self):
@@ -109,7 +154,47 @@ class GeometryObj():
 
     def parse_input(self, ConfigFile):
         """
-        Extract parameters from the section [geometry] of the ConfigFile
+        Extract parameters from the section [geometry] of the ConfigFile.
+        
+        Parameters
+        ----------
+        ConfigFile : str
+            Loaded configuration file.
+        
+        Returns
+        -------
+        redshift : float
+            Redshift where the galaxy is located.
+        dl : astropy.units.core.Unit 
+            Luminosity distance where the galaxy is located in (Mpc)
+        dist_angular : astropy.units.core.Unit
+            Angular diameter distance in (Mpc).
+        lambda_em : astropy.units.core.Unit
+            Central observed wavelength in (angstrom).
+        theta : astropy.units.core.Unit
+            Orientation angle of the major axis of the projected galaxy
+            in (deg).
+        phi : astropy.units.core.Unit
+            Angle of inclination of the disc with respect to the line
+            of sight in (deg).
+        barycenter : bool
+            Allows to calculate the center of the galaxy based on the 
+            ssc centering-scheme of astropy.
+        centerx : astropy.units.core.Unit
+            Center of the galaxy in the X axis in (kpc).
+        centery : astropy.units.core.Unit
+            Center of the galaxy in the Y axis in (kpc).
+        centerz : astropy.units.core.Unit
+            Center of the galaxy in the Z axis in (kpc).
+        reference : str
+            Path of the reference file.
+        gas_minmax_keys : str
+            Specific properties and boundaries to filter the gas
+            particles.
+        gas_min_values : str
+            Minimum boundary to filter the gas particles.
+        gas_max_values : str
+            Maximum boundary to filter the gas particles.
         """
 
         g_conf = configparser.SafeConfigParser(allow_no_value=True)
@@ -137,6 +222,7 @@ class GeometryObj():
             g_conf, "geometry", "gas_max_values", str)
 
         # Filter the gas particles according to the specified properties and boundaries (if any)
+        
         if(self.gas_minmax_keys != ""):
             self.gas_minmax_keys = re.split(
                 ",|;", "".join(self.gas_minmax_keys.split()))
@@ -159,26 +245,99 @@ class GeometryObj():
 # Aqui necesito una correccion: Que se puedan superseed *dist_angular* y *dl*
 
     def check_redshift(self):
+        """
+        For consistency between redshift, luminosity distance, central
+        observed wavelength and angular diameter distance, superseding
+        the passed values for the redshift if necessary.
+        
+        Returns
+        -------
+        dl : astropy.units.core.Unit 
+            Luminosity distance where the galaxy is located in (Mpc)
+        lambda_em : astropy.units.core.Unit
+            Central observed wavelength in (angstrom).        
+        dist_angular : astropy.units.core.Unit
+            Angular diameter distance in (Mpc).
+        """
+        
         if ~np.isnan(self.redshift):
             self.dl = cosmo.luminosity_distance(self.redshift)
             self.lambda_em = (1 + self.redshift) * ct.Halpha0
             self.dist_angular = cosmo.angular_diameter_distance(self.redshift)
 
     def kpc_to_arcsec(self, length):
+        """
+        Transform the lengths to arsec using the angular diameter
+        distance.
+        
+        Parameters
+        ----------
+        length : astropy.units.quantity.Quantity
+            Length to be transformed into arsec units.
+        
+        Returns
+        -------
+        length_arsec : astropy.units.quantity.Quantity
+            Transformed length in (arsec).
+        """
         length_arcsec = length.to("pc").value/self.dist_angular.to("pc").value
         length_arcsec = np.rad2deg(length_arcsec) * 3600 * unit.arcsec
         return length_arcsec
 
     def arcsec_to_kpc(self, angle):
+        """
+        Transform the angles to lengths using the angular diameter
+        distance.
+        
+        Parameters
+        ----------
+        angle : astropy.units.quantity.Quantity
+            Angle to be transformed into kpc units.
+        
+        Returns
+        -------
+        length : astropy.units.quantity.Quantity
+            Transformed length in (kpc).
+        """
+        
         length = angle.to("rad").value * self.dist_angular.to("kpc")
         return length
 
     def vel_to_wavelength(self, vel):
+        """
+        Transform the velocities to wavelenghts using the
+        central observed wavelength of the galaxy.
+        
+        Parameters
+        ----------
+        vel : astropy.units.quantity.Quantity
+            Velocity to be transformed into angstrom units.
+        
+        Returns
+        -------
+        wavelength : astropy.units.quantity.Quantity
+            Transformed velocity in (angstrom).
+        """
+        
         wavelength = self.lambda_em * vel.to("km s-1").value / (
             ct.c.to("km s-1").value)
         return wavelength
 
     def wavelength_to_vel(self, wavelength):
+        """
+        Transform the wavelengths to velocities using the
+        central observed wavelength of the galaxy.
+        
+        Parameters
+        ----------
+        wavelength : astropy.units.quantity.Quantity
+            Wavelength to be transformed into km * s-1 units.
+        
+        Returns
+        -------
+        vel : astropy.units.quantity.Quantity
+            Transformed wavelength in (km s-1).
+        """
         vel = ct.c.to("km s-1") * wavelength.to("angstrom").value / (
             self.lambda_em.to("angstrom").value)
         return vel
@@ -187,7 +346,8 @@ class GeometryObj():
 class SpectromObj():
     """
     Group the relevant parameters for the *instrumental* set up
-    and operations to check them for self consistency
+    adopted for the mock observations, and operations to check
+    them for self consistency.    
     """
 
     def __init__(self):
@@ -196,6 +356,64 @@ class SpectromObj():
     def parse_input(self, ConfigFile):
         """
         Extract parameters from the section [spectrom] of the ConfigFile
+        
+        Parameters
+        ----------
+        ConfigFile : str
+            Loaded configuration file.
+        
+        Returns
+        -------
+        presets : str
+            Name of the instrument to mimic, some options are: sinfoni,
+            eagle, ghasp, muse-wide, etc. See all options in presets.py.
+        spatial_sampl : astropy.units.core.Unit 
+            Spatial sampling of the instrument in (arsec).
+        spectral_sampl : astropy.units.core.Unit
+            Spectral sampling of the instrument in (angstrom).
+        spatial_res : astropy.units.core.Unit
+            Spatial resolution of the instrument in (arsec).
+        spectral_res : float
+            Spectral resolution of the instrument.
+        spatial_dim : int
+            #########
+        spectral_dim : int
+            #########
+        sigma_cont : float
+            #########
+        redshift_ref : float
+            Reference redshift used to calculate the fraction
+            of ionized hydrogen using the procedure exposed in
+            (Rahmati et al 2012). See more info in ########.py.
+        pixsize : astropy.units.core.Unit
+            Pixel size of the instrument in (pc).
+        velocity_sampl : astropy.units.core.Unit
+            Spectral sampling of the instrument in velocity units
+            (km s-1).
+        fieldofview : astropy.units.core.Unit
+            Size of one side of the square field of view of the
+            instrument in (kpc).
+        velocity_range : astropy.units.core.Unit
+            Spectral range of the instrument in velocity units
+            (km s-1).
+        spatial_res_kpc : astropy.units.core.Unit
+            Spatial resolution of the instrument in (kpc).
+        kernel_scale : float
+            ########
+        oversampling : int
+            ########
+        lum_dens_rel : str
+            Ions number density dependence to calculate the H-alpha emission.
+            The options are: square (default), linear or root. See more info
+            in emitters.py.
+        density_threshold : str
+            Density threshold that allows to change the H-alpha emission for
+            certain gas particles that exceed the established limit. See more
+            info in emitters.py.  
+        equivalent_luminosity : str
+            Equivalent luminosity that replace the H-alpha emission for
+            certain gas particles that exceed the established density threshold.
+            See more info in emitters.py. 
         """
 
         spec_conf = configparser.SafeConfigParser(allow_no_value=True)
@@ -249,9 +467,12 @@ class SpectromObj():
             spec_conf, "spectrom", "kernel_scale", float)
         self.oversampling = read_var(
             spec_conf, "spectrom", "oversampling", int)
-        self.lum_dens_rel = read_var(spec_conf, "spectrom", "lum_dens_relation", str)
-        self.density_threshold = read_var(spec_conf, "spectrom", "density_threshold", str)
-        self.equivalent_luminosity = read_var(spec_conf, "spectrom", "equivalent_luminosity", str)
+        self.lum_dens_rel = read_var(
+            spec_conf, "spectrom", "lum_dens_relation", str)
+        self.density_threshold = read_var(
+            spec_conf, "spectrom", "density_threshold", str)
+        self.equivalent_luminosity = read_var(
+            spec_conf, "spectrom", "equivalent_luminosity", str)
 
     def cube_dims(self):
         """
@@ -449,13 +670,14 @@ def get_allinput(ConfigFile):
 
     Parameters
     ----------
-    ConfigFile : location of the configuration file.
+    ConfigFile : Location of the configuration file.
     """
 
     # Code flow:
     # =====================
     # > Parse the input parameters from ConfigFile
     # > Set the output name and check if it has the rights to write it
+    
     if(not os.path.isfile(ConfigFile)):
         logging.error(f"// {ConfigFile} not found")
         return
