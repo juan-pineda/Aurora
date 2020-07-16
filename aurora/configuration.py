@@ -368,7 +368,7 @@ class SpectromObj():
             Name of the instrument to mimic, some options are: sinfoni,
             eagle, ghasp, muse-wide, etc. See all options in presets.py.
         spatial_sampl : astropy.units.core.Unit 
-            Spatial sampling of the instrument in (arsec).
+            Pixel size of the instrument in (arsec).
         spectral_sampl : astropy.units.core.Unit
             Spectral sampling of the instrument in (angstrom).
         spatial_res : astropy.units.core.Unit
@@ -376,11 +376,11 @@ class SpectromObj():
         spectral_res : float
             Spectral resolution of the instrument.
         spatial_dim : int
-            #########
+            Number of pixels per side of the field of view.
         spectral_dim : int
-            #########
+            Number of spectral channels of the instrument.
         sigma_cont : float
-            #########
+            Target signal to noise ratio of the instrument.
         redshift_ref : float
             Reference redshift used to calculate the fraction
             of ionized hydrogen using the procedure exposed in
@@ -393,27 +393,36 @@ class SpectromObj():
         fieldofview : astropy.units.core.Unit
             Size of one side of the square field of view of the
             instrument in (kpc).
+        FoV_arcsec : astropy.units.core.Unit
+            Size of one side of the square field of view of the
+            instrument in (arsec).
         velocity_range : astropy.units.core.Unit
             Spectral range of the instrument in velocity units
             (km s-1).
+        spectral_range : astropy.units.core.Unit
+            Spectral range of the instrument in (angstrom).
         spatial_res_kpc : astropy.units.core.Unit
             Spatial resolution of the instrument in (kpc).
         kernel_scale : float
-            ########
+            Constant that apply a higher smoothing to the projected
+            luminosity of the particles, especially for RAMSES-type
+            simulations.
         oversampling : int
-            ########
+            Number by which the pixel size is going to be oversampled
+            when the convolution is carried out, to minimize
+            numerical errors.
         lum_dens_rel : str
-            Ions number density dependence to calculate the H-alpha emission.
-            The options are: square (default), linear or root. See more info
-            in emitters.py.
+            Ions number density dependence to calculate the H-alpha
+            emission. The options are: square (default), linear or
+            root. See more info in emitters.py.
         density_threshold : str
-            Density threshold that allows to change the H-alpha emission for
-            certain gas particles that exceed the established limit. See more
-            info in emitters.py.  
+            Density threshold that allows to change the H-alpha
+            emission for certain gas particles that exceed the
+            established limit. See more info in emitters.py.  
         equivalent_luminosity : str
-            Equivalent luminosity that replace the H-alpha emission for
-            certain gas particles that exceed the established density threshold.
-            See more info in emitters.py. 
+            Equivalent luminosity that replace the H-alpha emission
+            for certain gas particles that exceed the established
+            density threshold. See more info in emitters.py. 
         """
 
         spec_conf = configparser.SafeConfigParser(allow_no_value=True)
@@ -459,8 +468,12 @@ class SpectromObj():
             spec_conf, "spectrom", "velocity_sampl", float, unit.km/unit.s)
         self.fieldofview = read_var(
             spec_conf, "spectrom", "fieldofview", float, unit.kpc)
+        self.FoV_arcsec = read_var(
+            spec_conf, "spectrom", "FoV_arsec", float, unit.arcsec)
         self.velocity_range = read_var(
             spec_conf, "spectrom", "velocity_range", float, unit.km/unit.s)
+        self.spectral_range = read_var(
+            spec_conf, "spectrom", "spectral_range", float, unit.angstrom)
         self.spatial_res_kpc = read_var(
             spec_conf, "spectrom", "spatial_res_kpc", float, unit.kpc)
         self.kernel_scale = read_var(
@@ -476,7 +489,15 @@ class SpectromObj():
 
     def cube_dims(self):
         """
-        Just a shortcut for the cube dimensions
+        Just a shortcut for the cube dimensions.
+        
+        Returns
+        -------
+        cube_side : int
+            Number of pixels per side of the
+            field of view.
+        n_ch : int
+            Number of spectral channels.
         """
 
         cube_side = self.spatial_dim
@@ -485,15 +506,18 @@ class SpectromObj():
 
     def position_in_pixels(self,x,y):
         """
-        Calculate the position x and y in pixels and the positional index for
-        each particle.
+        Calculate the x and y position in pixels for
+        each particle, and the positional index along
+        the face on slide of the cube.
 
         Parameters
         ----------
         x : astropy.units.quantity.Quantity
-            Loaded position in X axis (Kpc) from CofigFile for each particle.
+            Loaded position in X axis (Kpc) from
+            CofigFile for each particle.
         y : astropy.units.quantity.Quantity
-            Loaded position in Y axis (Kpc) from CofigFile for each particle.
+            Loaded position in Y axis (Kpc) from
+            CofigFile for each particle.
 
         Returns
         -------
@@ -524,7 +548,16 @@ class SpectromObj():
     def oversample(self):
         """
         Adjust the configuration parameters to oversample the target
-        spatial resolution according to *self.oversampling*
+        spatial resolution according to *self.oversampling*.
+        
+        Returns
+        -------
+        pixsize : astropy.units.core.Unit
+            Pixel size of the instrument in (pc).
+        spatial_dim : int
+            Number of pixels per side of the field of view.
+        spatial_sampl : astropy.units.core.Unit 
+            Pixel size of the instrument in (arsec).
         """
 
         self.pixsize = self.pixsize / self.oversampling
@@ -534,7 +567,16 @@ class SpectromObj():
     def undersample(self):
         """
         Adjust the configuration parameters to undersample the target
-        spatial resolution according to *self.oversampling*
+        spatial resolution according to *self.oversampling*.
+        
+        Returns
+        -------
+        pixsize : astropy.units.core.Unit
+            Pixel size of the instrument in (pc).
+        spatial_dim : int
+            Number of pixels per side of the field of view.
+        spatial_sampl : astropy.units.core.Unit 
+            Pixel size of the instrument in (arsec).
         """
 
         self.pixsize = self.pixsize * self.oversampling
@@ -543,9 +585,10 @@ class SpectromObj():
 
     def check_params(self, geom):
         """
-        Check the self-consistency of related parameters such as pixsize
-        and spatial_sampl, and adjust them as necessary according to the
-        hierarchy specified in the documentation file.
+        Check the self-consistency of related parameters such
+        as pixsize and spatial_sampl, and adjust them as
+        necessary according to the hierarchy specified in the
+        documentation file.
         """
         pass
         self.check_pixsize(geom)
@@ -557,8 +600,15 @@ class SpectromObj():
 
     def check_pixsize(self, geom):
         """
-        Force consistency between pixsize and spatial_sampl, superseding
-        the passed value for the latter if necessary.
+        Force consistency between pixsize and spatial_sampl,
+        superseding the passed value for the latter if necessary.
+        
+        Returns
+        -------
+        spatial_sampl : astropy.units.core.Unit 
+            Pixel size of the instrument in (arsec).
+        pixsize : astropy.units.core.Unit
+            Pixel size of the instrument in (pc).
         """
 
         if ~np.isnan(self.pixsize):
@@ -571,6 +621,13 @@ class SpectromObj():
         """
         Force consistency between spatial_res_kpc and spatial_res,
         superseding the passed value for the latter if necessary.
+        
+        Returns
+        -------
+        spatial_res : astropy.units.core.Unit
+            Spatial resolution of the instrument in (arsec).
+        spatial_res_kpc : astropy.units.core.Unit
+            Spatial resolution of the instrument in (kpc).
         """
 
         if ~np.isnan(self.spatial_res_kpc):
@@ -584,6 +641,17 @@ class SpectromObj():
         """
         Force consistency between fieldofview, FoV_arcsec, and spatial_dim,
         possibly superseding their input values as necessary.
+        
+        Returns
+        -------
+        fieldofview : astropy.units.core.Unit
+            Size of one side of the square field of view of the
+            instrument in (kpc).
+        FoV_arcsec : astropy.units.core.Unit
+            Size of one side of the square field of view of the
+            instrument in (arsec).
+        spatial_dim : int
+            Number of pixels per side of the field of view.
         """
 
         if ~np.isnan(self.fieldofview):
@@ -603,6 +671,14 @@ class SpectromObj():
         """
         Force consistency between velocity_sampl and spectral_sampl,
         possibly superseding the latter as necessary.
+        
+        Returns
+        -------
+        spectral_sampl : astropy.units.core.Unit
+            Spectral sampling of the instrument in (angstrom).
+        velocity_sampl : astropy.units.core.Unit
+            Spectral sampling of the instrument in velocity units
+            (km s-1).
         """
 
         if ~np.isnan(self.velocity_sampl):
@@ -616,6 +692,16 @@ class SpectromObj():
         """
         Force consistency between velocity_range, spectral_range, and
         spectral_dim, possibly superseding their input values.
+        
+        Returns
+        -------        
+        velocity_range : astropy.units.core.Unit
+            Spectral range of the instrument in velocity units
+            (km s-1).
+        spectral_range : astropy.units.core.Unit
+            Spectral range of the instrument in (angstrom).
+        spectral_dim : int
+            Number of spectral channels of the instrument.
         """
 
         if ~np.isnan(self.velocity_range):
@@ -633,6 +719,20 @@ class SpectromObj():
                 self.check_velocity_range(geom)
 
     def set_channels(self, geom):
+        """
+        Set the central values of each one of the spectral 
+        channels.
+        
+        Returns
+        -------        
+        vel_channels : astropy.units.quantity.Quantity
+            Central spectral values of each channel in
+            velocity units (km s-1).
+        lambda_channels : astropy.units.quantity.Quantity
+            Central spectral values of each channel in
+            (angstrom).
+        """
+        
         channel_array = np.arange(self.spectral_dim) - self.spectral_dim / 2
         self.lambda_channels = geom.lambda_em + channel_array * self.spectral_sampl
         self.vel_channels = channel_array * self.velocity_sampl
@@ -649,20 +749,63 @@ class SpectromObj():
                 self.redshift_ref = geom.redshift
 
     def set_reference(self):
+        """
+        Set the reference values for each channel, pixel
+        position and velocity.
+        
+        Returns
+        -------        
+        channel_ref : int
+            Reference value for each channel.
+        vel_ref : astropy.units.quantity.Quantity
+            Reference value for the velocity.
+        pixel_ref : float
+            Reference value for each pixel.
+        position_ref : astropy.units.quantity.Quantity
+            Reference position.
+        """
+        
         self.channel_ref = int(self.spectral_dim / 2.)
         self.vel_ref = 0. * unit.km / unit.s
         self.pixel_ref = (self.spatial_dim - 1) / 2.
         self.position_ref = 0. * unit.pc
 
     def get_one_channel(self, index):
+        """
+        Get the velocity of each particle in one channel.
+        
+        Parameters
+        ----------
+        index : astropy.units.quantity.Quantity
+            Positional index in pixels for each particle.
+        
+        Returns
+        -------        
+        v_channel + vel_ref : astropy.units.quantity.Quantity
+            Velocity of each particle for one channel.        
+        """
+        
         v_channel = (index - self.channel_ref)*self.velocity_sampl.to("km s-1")
         return v_channel + self.vel_ref.to("km s-1")
 
     def get_one_position(self, index):
+        """
+        Get the position of each particle in one channel.
+        
+        Parameters
+        ----------
+        index : astropy.units.quantity.Quantity
+            Positional index in pixels for each particle.
+        
+        Returns
+        -------        
+        v_channel + vel_ref : astropy.units.quantity.Quantity
+            Velocity of each particle for one channel.        
+        """        
         position = (index - self.pixel_ref) * self.pixsize.to("pc")
         return position + self.position_ref.to("pc")
 
-
+    
 def get_allinput(ConfigFile):
     """
     Read all attributes from the ConfigFile and adjust them for
@@ -670,7 +813,21 @@ def get_allinput(ConfigFile):
 
     Parameters
     ----------
-    ConfigFile : Location of the configuration file.
+    ConfigFile : str
+        Loaded configuration file.
+    
+    Returns
+    -------  
+    geom : aurora.configuration.GeometryObj
+        Instance of class GeometryObj whose attributes make geometric 
+        properties available. See definitions in configuration.py.
+    run : aurora.configuration.RunObj
+        Instance of class RunObj whose attributes make code computational
+        performance properties available. See definitions in
+        configuration.py.
+    spectrom : aurora.configuration.SpectromObj
+        Instance of class SpectromObj whose attributes make instrumental
+        properties available. See definitions in configuration.py.    
     """
 
     # Code flow:
