@@ -1,3 +1,44 @@
+"""
+========
+configuration
+========
+
+Aurora module that contains methods in charge of building the
+three main classes of objects in the code:
+
+> RunObj : Group the main parameters regarding the computational aspects of the
+    run, including the variables that determines the computational
+    performance of the code, and additional information for the headers.
+
+> GeometryObj : Group the main parameters related to the geometrical orientation
+    adopted for the mock observations, operations to check them for
+    self consistency, cuts to be applied to the snapshot particles
+    before use their properties and operations to transform equivalent
+    properties in different units.
+
+> SpectromObj : Group the relevant parameters for the *instrumental* set up
+    adopted for the mock observations, and operations to check
+    them for self consistency.
+
+Notes
+-----
+For the self consistency of the cosmological distances, the hierarchy for the
+parameters inside the code is:
+
+> redshift (redshift)
+> dist_lum (luminosity distance)
+> lambda_obs (central observed wavelength)
+> dist_angular (angular diameter distance)
+
+For the self consistency of the spatial features of the instrument, the length
+parameters, like pixsize in (pc), will overwrite the angular parameters, like
+spatial_sampl in (arsec).
+
+For the self consistency of the spectral features of the instrument, the velocity
+parameters, like velocity_range in (km s-1), will overwrite the wavelenght
+parameters, like spectral_range in (angstrom).
+"""
+
 import os
 import re
 import sys
@@ -6,6 +47,7 @@ import numpy as np
 import configparser
 from astropy import units as unit
 from astropy.cosmology import Planck13 as cosmo
+from astropy.cosmology import z_at_value
 
 from . import presets
 from . import constants as ct
@@ -99,8 +141,9 @@ class RunObj():
         output_dir : str
             Path of the output directory.
         instrument : str
-            Keyword to generate the name output_dir if it was not
-            previously specified.
+            Keyword to include the name of the instrumentational
+            set up of the mock observation to be added in the
+            output_dir name if it was not previously specified.
         nvector : int
             Number of particles to be projected simultaneously.
         ncpu : int
@@ -139,7 +182,7 @@ class RunObj():
         self.fft_hsml_min = read_var(run_config, "run", "fft_hsml_min", float,
                                      unit.pc)
 
-
+        
 class GeometryObj():
     """
     Group the main parameters related to the geometrical orientation
@@ -169,7 +212,7 @@ class GeometryObj():
             Luminosity distance where the galaxy is located in (Mpc)
         dist_angular : astropy.units.core.Unit
             Angular diameter distance in (Mpc).
-        lambda_em : astropy.units.core.Unit
+        lambda_obs : astropy.units.core.Unit
             Central observed wavelength in (angstrom).
         theta : astropy.units.core.Unit
             Orientation angle of the major axis of the projected galaxy
@@ -204,8 +247,8 @@ class GeometryObj():
         self.dl = read_var(g_conf, "geometry", "dist_lum", float, unit.Mpc)
         self.dist_angular = read_var(
             g_conf, "geometry", "dist_angular", float, unit.Mpc)
-        self.lambda_em = read_var(
-            g_conf, "geometry", "lambda_em", float, unit.angstrom)
+        self.lambda_obs = read_var(
+            g_conf, "geometry", "lambda_obs", float, unit.angstrom)
         self.theta = read_var(g_conf, "geometry", "theta", float, unit.deg)
         self.phi = read_var(g_conf, "geometry", "phi", float, unit.deg)
         self.barycenter = read_var(g_conf, "geometry", "barycenter", bool)
@@ -241,20 +284,19 @@ class GeometryObj():
                     "The number of elements in gas_minmax_keys and gas_max_values should be equal")
                 sys.exit()
 
-# NOTA MENTAL!
-# Aqui necesito una correccion: Que se puedan superseed *dist_angular* y *dl*
-
     def check_redshift(self):
         """
-        For consistency between redshift, luminosity distance, central
+        Force consistency between redshift, luminosity distance, central
         observed wavelength and angular diameter distance, superseding
-        the passed values for the redshift if necessary.
+        the values of each one of this variables following the hierarchical
+        order previously presented. All estimates of these quantities are 
+        based on LambdaCDM cosmology.
         
         Returns
         -------
         dl : astropy.units.core.Unit 
             Luminosity distance where the galaxy is located in (Mpc)
-        lambda_em : astropy.units.core.Unit
+        lambda_obs : astropy.units.core.Unit
             Central observed wavelength in (angstrom).        
         dist_angular : astropy.units.core.Unit
             Angular diameter distance in (Mpc).
@@ -262,8 +304,27 @@ class GeometryObj():
         
         if ~np.isnan(self.redshift):
             self.dl = cosmo.luminosity_distance(self.redshift)
-            self.lambda_em = (1 + self.redshift) * ct.Halpha0
+            self.lambda_obs = (1 + self.redshift) * ct.Halpha0
             self.dist_angular = cosmo.angular_diameter_distance(self.redshift)
+        
+        else:
+            if ~np.isnan(self.dl):
+                self.redshift = z_at_value(cosmo.luminosity_distance, self.dl)
+                self.lambda_obs = (1 + self.redshift) * ct.Halpha0
+                self.dist_angular = cosmo.angular_diameter_distance(self.redshift)
+            
+            elif ~np.isnan(self.lambda_obs):
+                self.redshift =  (self.lambda_obs/ct.Halpha0) - 1
+                self.dl = cosmo.luminosity_distance(self.redshift)
+                self.dist_angular = cosmo.angular_diameter_distance(self.redshift)
+           
+            # For the angular diameter distance there are multiple corresponding redshift
+            # values for the LambdaCDM cosmology, so here we will choose the one that meets
+            # the parameters established within the z_at_value module of astropy.
+            elif ~np.isnan(self.dist_angular):
+                self.redshift = z_at_value(cosmo.angular_diameter_distance, self.dist_angular)
+                self.dl = cosmo.luminosity_distance(self.redshift)
+                self.lambda_obs = (1 + self.redshift) * ct.Halpha0
 
     def kpc_to_arcsec(self, length):
         """
@@ -319,7 +380,7 @@ class GeometryObj():
             Transformed velocity in (angstrom).
         """
         
-        wavelength = self.lambda_em * vel.to("km s-1").value / (
+        wavelength = self.lambda_obs * vel.to("km s-1").value / (
             ct.c.to("km s-1").value)
         return wavelength
 
@@ -339,7 +400,7 @@ class GeometryObj():
             Transformed wavelength in (km s-1).
         """
         vel = ct.c.to("km s-1") * wavelength.to("angstrom").value / (
-            self.lambda_em.to("angstrom").value)
+            self.lambda_obs.to("angstrom").value)
         return vel
 
 
@@ -596,7 +657,6 @@ class SpectromObj():
         self.check_fieldofview(geom)
         self.check_velocity_sampl(geom)
         self.check_velocity_range(geom)
-        self.check_redshift_ref(geom)
 
     def check_pixsize(self, geom):
         """
@@ -734,19 +794,8 @@ class SpectromObj():
         """
         
         channel_array = np.arange(self.spectral_dim) - self.spectral_dim / 2
-        self.lambda_channels = geom.lambda_em + channel_array * self.spectral_sampl
+        self.lambda_channels = geom.lambda_obs + channel_array * self.spectral_sampl
         self.vel_channels = channel_array * self.velocity_sampl
-
-    def check_redshift_ref(self, geom):
-        """
-        If redshift_ref was not defined, but redshift was, set them to
-        the same value
-        """
-
-        global missing_params
-        if self.redshift_ref in missing_params:
-            if ~np.isnan(geom.redshift):
-                self.redshift_ref = geom.redshift
 
     def set_reference(self):
         """
@@ -772,7 +821,9 @@ class SpectromObj():
 
     def get_one_channel(self, index):
         """
-        Get the velocity of each particle in one channel.
+        Get the velocity of each particle in (km s-1) 
+        for each positional index, taking into account
+        the reference velocity.
         
         Parameters
         ----------
@@ -782,7 +833,7 @@ class SpectromObj():
         Returns
         -------        
         v_channel + vel_ref : astropy.units.quantity.Quantity
-            Velocity of each particle for one channel.        
+            Velocity of each particle in (km s-1) for each index.        
         """
         
         v_channel = (index - self.channel_ref)*self.velocity_sampl.to("km s-1")
@@ -790,7 +841,9 @@ class SpectromObj():
 
     def get_one_position(self, index):
         """
-        Get the position of each particle in one channel.
+        Get the position of each particle in (pc) for
+        each positional index, taking into account the
+        reference position.
         
         Parameters
         ----------
@@ -799,8 +852,8 @@ class SpectromObj():
         
         Returns
         -------        
-        v_channel + vel_ref : astropy.units.quantity.Quantity
-            Velocity of each particle for one channel.        
+        position + position_ref : astropy.units.quantity.Quantity
+            Position of each particle in (pc) for each index.        
         """        
         position = (index - self.pixel_ref) * self.pixsize.to("pc")
         return position + self.position_ref.to("pc")
@@ -875,7 +928,7 @@ def get_allinput(ConfigFile):
     logging.info(f"redshift = {geom.redshift}")
     logging.info(f"luminosity distance = {geom.dl}")
     logging.info(f"angular distance = {geom.dist_angular}")
-    logging.info(f"redshifted wavelength = {geom.lambda_em}")
+    logging.info(f"redshifted wavelength = {geom.lambda_obs}")
     logging.info(f"barycenter = {geom.barycenter}")
     logging.info(f"theta = {geom.theta}")
     logging.info(f"phi = {geom.phi}")
