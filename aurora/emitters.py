@@ -1,3 +1,39 @@
+"""
+========
+emitters
+========
+
+Aurora module that contains methods in charge of building the objects of the
+class emitters, responsible for grouping the main parameters to compute the
+H-alpha emission of a bunch of particles using the main physical quantities
+in the simulation, and deriving other important physical quantites from them.
+
+Notes
+-----
+Calculations of the luminosity of the gas particles from the physical properties
+stored in the simulation can be done in many different ways depending on the
+keywords used in the configuration file, please review the code flow presented
+below to make sure that the luminosity built into your run corresponds to the
+proper logic.
+
+Code flow:
+==========
+> Try to read the fraction of ionized hydrogen (HII) stored in the simulation.
+> Try to read if the redshift_ref was stored in the ConfigFile.
+> If redshif_ref is different from zero use the (Rahmati et al 2012) method.
+> If redshift_ref is equal to zero use the stored HII.
+> If redshift_ref is equal to zero and there is not stored HII info, use a 
+  naive approximation of the HII coefficient setting it to zero for particles
+  under 10e4 (K) and setting it to one for particles above that temperature.
+> Use the fraction of ionized hydrogen to calculate mu, dens_ion and temp.
+> Calculate the alphaH coeficient.
+> Calculate the luminosity of each particle taking into account the dens_ion
+  dependence stored in lum_dens_rel in the ConfigFile.
+> Store the total luminosity, the central wavelenght and the broadening of
+  each emision line for each gas particle.
+"""
+
+
 import numpy as np
 from scipy import special
 from astropy import units as unit
@@ -30,8 +66,8 @@ class Emitters:
     def get_state(self):
         """
         Calculate the temperature, the fraction of ionized hydrogen, the average
-        molecular weight of ionized hydrogen and the ions number density of a 
-        bunch of particles using the main physical quantitties in the simulation.
+        molecular weight and the ions number density of a bunch of particles using
+        the main physical quantitties in the simulation.
 
         Returns
         -------
@@ -40,10 +76,20 @@ class Emitters:
         HII : ndarray
             Fraction of ionized hydrogen for a bunch of particles.
         mu : ndarray
-            Average molecular weight of ionized hydrogen for a bunch of particles.
+            Average molecular weight for a bunch of particles.
         dens_ion : astropy.units.quantity.Quantity
             Ions number density in (cm**-3) for a bunch of particles.
         """
+        # Code flow:
+        # ==========
+        # > Try to read the fraction of ionized hydrogen (HII) stored in the simulation.
+        # > Try to read if the redshift_ref was stored in the ConfigFile.
+        # > If redshif_ref is different from zero use the (Rahmati et al 2012) method.
+        # > If redshift_ref is equal to zero use the stored HII.
+        # > If redshift_ref is equal to zero and there is not stored HII info, use a 
+        #   naive approximation of the HII coefficient setting it to zero for particles
+        #   under 10e4 (K) and setting it to one for particles above that temperature.
+        # > Use the fraction of ionized hydrogen to calculate mu, dens_ion and temp.
         
         if "HII" in self.data.keys():
             self.get_HII()
@@ -65,8 +111,8 @@ class Emitters:
         
     def get_luminosity(self, mode):
         """
-        Calculate the H-alpha emission for each particle in (erg s**-1), with
-        different ions number density dependence.
+        Calculate the H-alpha emission for each particle in (erg s**-1), based
+        on the alphaH coefficient with different ions number density dependence.
         
         Parameters
         ----------
@@ -151,9 +197,9 @@ class Emitters:
     def get_all_params(self):
         """
         Calculate the temperature, the fraction of ionized hydrogen, the average
-        molecular weight of ionized hydrogen and the ions number density of a bunch
-        of particles, as a first aproximation for input archives for which there is
-        no electron abundance information stored.
+        molecular weight and the ions number density of a bunch of particles, as
+        a first aproximation for input archives for which there is no electron
+        abundance information stored.
 
         Returns
         -------
@@ -162,7 +208,7 @@ class Emitters:
         HII : ndarray
             Fraction of ionized hydrogen for a bunch of particles.
         mu : ndarray
-            Average molecular weight of ionized hydrogen for a bunch of particles.
+            Average molecular weight for a bunch of particles.
         dens_ion : astropy.units.quantity.Quantity
             Ions number density in (cm**-3) for a bunch of particles.
         """
@@ -180,9 +226,9 @@ class Emitters:
 
     def get_mean_weight(self, temp):
         """
-        Calculate the average molecular weight of ionized hydrogen of a bunch
-        of particles, as a first aproximation for input archives for which 
-        there is no electron abundance information stored.
+        Calculate the average molecular weight of a bunch of particles,
+        as a first aproximation for input archives for which there is no
+        electron abundance information stored.
         
         Parameters
         ----------
@@ -253,14 +299,15 @@ class Emitters:
 
     def get_mu(self):
         """
-        Calculate the average molecular weight of ionized hydrogen of a bunch
-        of particles, using the hydrogen cosmological fraction as a constant
-        and the fraction of ionized hydrogen of each particle.
+        Calculate the average molecular weight of a bunch of particles, using
+        the hydrogen cosmological fraction to establish the relationship between
+        the helium and hydrogen spices in each particle and asuming ionization
+        only for hydrogen.
 
         Returns
         -------
         mu : ndarray
-            Average molecular weight of ionized hydrogen for a bunch of particles.
+            Average molecular weight for a bunch of particles.
         """
         
         mu = 4. / (3*ct.Xh + 1 + 4*self.HII*ct.Xh)
@@ -269,7 +316,7 @@ class Emitters:
     def get_temp(self):
         """
         Calculate the temperature of each particle in (K), using the internal
-        energy and the average molecular weight of ionized hydrogen.
+        energy and the average molecular weight.
 
         Returns
         -------

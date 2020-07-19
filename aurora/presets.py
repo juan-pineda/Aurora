@@ -1,3 +1,26 @@
+"""
+=======
+presets
+=======
+
+Aurora module that contains the preset values for key words essential for
+the correct operation of the code, as well as the preset values for the
+simulation of synthetic observations that mimic the real instruments.
+
+Notes
+-----
+The preset instruments are:
+
+> sinfoni
+> sinfoni-ao
+> eagle
+> kmos
+> muse-wide
+> muse-narrow
+> ghasp
+> fake1
+"""
+
 import numpy as np
 from astropy import units as unit
 

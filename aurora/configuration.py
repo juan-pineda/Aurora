@@ -1,7 +1,7 @@
 """
-========
+=============
 configuration
-========
+=============
 
 Aurora module that contains methods in charge of building the
 three main classes of objects in the code:
