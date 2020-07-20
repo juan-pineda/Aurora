@@ -187,11 +187,24 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         line_sigma = np.sqrt(line_sigma**2+psf_sigma**2)
 
     # Integrated flux inside each velocity channel given its position and width
+    
+    # Example:
+    # --------
+    # With n particles, m velocity channels and X the integrated flux inside
+    # each velocity channel, flux_in_channels is:
+    #    
+    # [ X11 X12 X13 ... X1m
+    #   X21 X22 X23 ... X2m
+    #    .   .   .  ...
+    #    .   .   .  ...
+    #   Xn1 Xn2 Xn3 ... Xnm]
+    
     flux_in_channels = em.int_gaussian_with_units(channel_center, channel_width, line_center,
         line_sigma) * line_flux
 
     # Divide by the effective channel width
-    flux_in_channels = flux_in_channels.to("erg s^-1").value / spectrom.velocity_sampl.to("km s^-1").value / geom.dl.to("cm").value**2
+    flux_in_channels = (flux_in_channels.to("erg s^-1").value
+        / spectrom.velocity_sampl.to("km s^-1").value/geom.dl.to("cm").value**2)
 
     # Compute the fluxes scale by scale
     for i in np.unique(scale):
