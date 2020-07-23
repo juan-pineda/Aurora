@@ -1,7 +1,7 @@
 """
-========
+==========
 set_output
-======== 
+========== 
 
 Methods to prepare the output files of the processed cubes.
 """

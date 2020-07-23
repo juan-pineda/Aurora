@@ -1,7 +1,7 @@
 """
-========
+==============
 snapshot_tools
-========
+==============
 
 Methods that prepare the snapshot to build the synthetic cube.
 """

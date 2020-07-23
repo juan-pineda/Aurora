@@ -1,3 +1,18 @@
+"""
+============
+convolutions
+============
+
+This module contains the methods in charge of constructing the PSF and LSF to
+recreate the spatial and spectral resolution, respectively, with normalized Gaussian kernels. It also contains the methods that apply the spectral and
+spatial convolutions.
+
+Notes
+-----
+The only convolution not found in this module is the analytical spectral
+convolution stored in the spectrum_tools.py module.
+"""
+
 import numpy as np
 import logging
 
@@ -84,7 +99,7 @@ def next_odd(x):
         x += 1
         return x
     
-# Kernel create    
+# Kernel create functions
 
 def create_psf(spectrom, scale_sigma, size = 20):
     """
@@ -157,21 +172,27 @@ def create_lsf(spectrom, size = 20):
     lsf = lsf / lsf.sum()
     return lsf
 
-# Spatial convolutions
+# Spatial convolutions spatial
 
 def mode_spatial_convolution(cube, psf, mode = 'spatial_astropy'):
     """
     Apply the spatial convolution according to the method selected in the 
     input parameters.
     
+    Notes
+    -----
+    The cube and PSF must be configured for the same smoothing length.
+    
     Parameters
     ----------
     cube : ndarray (3D)
         Contains the fluxes at each pixel and velocity channel 
-        produced by the gas particles with a given smoothing
-        lengths separately.
+        produced by the gas particles with a smoothing lengths.
     psf : ndarray (2D)
-        Normalized kernel.
+        Normalized kernel. It must correspond to the PSF for the smoothing 
+        length of the given cube, in addition to also taking into account 
+        the spatial resolution. It is recommended to use the create_psf 
+        function defined in this module.
     mode : srt, optional
         Selected method of applying spatial convolution:
         * spatial_astropy (default)
@@ -202,29 +223,116 @@ def mode_spatial_convolution(cube, psf, mode = 'spatial_astropy'):
 
 def spatial_convolution_astropy(cube, psf):
     """
+    Apply Astropy's convolution between the cube and the PSF.
+
+    Notes
+    -----
+    The cube and PSF must be configured for the same smoothing length.
     
-    
+    Parameters
+    ----------
+    cube : ndarray (3D)
+        Contains the fluxes at each pixel and velocity channel 
+        produced by the gas particles with a smoothing lengths.
+    psf : ndarray (2D)
+        Normalized kernel. It must correspond to the PSF for the smoothing 
+        length of the given cube, in addition to also taking into account 
+        the spatial resolution. It is recommended to use the create_psf 
+        function defined in this module.
+        
+    Returns
+    -------    
+    cube : ndarray (3D)
+        Cube convolved with the given PSF.
     """
     
+    # Code flow:
+    # ==========
+    # > The number of channels in the cube is assigned
+    # > The convolution is made between the psf and each channel of the cube.
     n_ch = cube.shape[0]
     for j in range(n_ch):
-        if (np.nanmax(cube[j, :, :]) == 0):
-            logging.info(f"No flux at this scale/velocity channel -> skip convolution")
-            continue
         cube[j, :, :] = astropy.convolution.convolve(cube[j,:,:],psf)
     return cube
 
-def spatial_convolution_astropy_fft(cube, psf):   
+def spatial_convolution_astropy_fft(cube, psf):
+    """
+    Apply Astropy's fft convolution between cube and PSF.
+
+    Notes
+    -----
+    The cube and PSF must be configured for the same smoothing length.
+    
+    Parameters
+    ----------
+    cube : ndarray (3D)
+        Contains the fluxes at each pixel and velocity channel 
+        produced by the gas particles with a smoothing lengths.
+    psf : ndarray (2D)
+        Normalized kernel. It must correspond to the PSF for the smoothing 
+        length of the given cube, in addition to also taking into account 
+        the spatial resolution. It is recommended to use the create_psf 
+        function defined in this module.
+        
+    Returns
+    -------    
+    cube : ndarray (3D)
+        Cube convolved with the given PSF.
+    """
+    
+    # Code flow:
+    # ==========
+    # > The number of channels in the cube is assigned.
+    # > The convolution is made between the psf and each channel of the cube.
     n_ch = cube.shape[0]
     for j in range(n_ch):
-        if (np.nanmax(cube[j, :, :]) == 0):
-            logging.info(f"No flux at this scale/velocity channel -> skip convolution")
-            continue
         cube[j, :, :] = astropy.convolution.convolve_fft(cube[j, :, :], psf, psf_pad = True, 
                                                    fft_pad = True, allow_huge=True) 
     return cube
 
 def spatial_convolution_aurora_fft(cube, psf):
+    """
+    Convolve the cube with the PSF using fft. To apply fft, a padding with
+    zeros is first made in the cube and PSF arrays, depending on the 
+    dimensions of these objects.
+
+    Notes
+    -----
+    The cube and PSF must be configured for the same smoothing length.
+    
+    Parameters
+    ----------
+    cube : ndarray (3D)
+        Contains the fluxes at each pixel and velocity channel 
+        produced by the gas particles with a smoothing lengths.
+    psf : ndarray (2D)
+        Normalized kernel. It must correspond to the PSF for the smoothing 
+        length of the given cube, in addition to also taking into account 
+        the spatial resolution. It is recommended to use the create_psf 
+        function defined in this module.
+        
+    Returns
+    -------    
+    cube : ndarray (3D)
+        Cube convolved with the given PSF. The cube has the original 
+        dimensions.
+    """
+    
+    # Code flow:
+    # ==========
+    # > Assign the cube dimensions.
+    # > Extends the PSF with zeros (padding with zeros) over the 
+    #   spacial dimensions.
+    # > Apply the fourier transformation to the PSF.
+    # > Extends the cube with zeros (padding with zeros) over the 
+    #   spacial dimensions.
+    # > Apply the fourier transformation to the cube over the 
+    #   spacial dimensions.
+    # > Makes the product between the cube and the PSF in the fourier 
+    #   space.
+    # > Apply the inverse transform to the product result.
+    # > Select the central area of the cube, according to the original
+    #   dimensions.
     x, y, z = cube.shape
     
     fshape = next_fast_len(y + psf.shape[0])
@@ -252,9 +360,79 @@ def spatial_convolution_aurora_fft(cube, psf):
     
     return cube
 
-# Spectral convolutions
+# Spectral convolutions functions
+
+def mode_spectral_convolution(cube, lsf, mode = 'spectral_astropy'):
+    """
+    Apply the spectral convolution according to the method selected in the 
+    input parameters.
+    
+    Parameters
+    ----------
+    cube : ndarray (3D)
+        Contains the fluxes at each pixel and velocity channel 
+        produced by the gas particles with a given smoothing
+        lengths separately.
+    lsf : ndarray (1D)
+        Normalized kernel. It must correspond to the LSF that recreates the
+        spectral resolution stored in the spectrom instance (object of the
+        SpectromObj class in the configuration.py module). It is recommended
+        to use the create_lsf function defined in this module.
+    mode : srt, optional
+        Selected method of applying spectral convolution:
+        * spectral_astropy (default)
+        * spectral_astorpy_fft
+        * spectral_aurora_fft
+        
+    Returns
+    -------    
+    cube : ndarray (3D)
+        Cube convolved with the given LSF.
+    """
+    
+    # Code flow:
+    # ==========
+    # > Reshape the cube to 3 dimensions
+    # > Apply the convolution according to the given method
+    if cube.shape == 2:
+        cube = np.resahpe(cube, (1,cube.shape[0], cube.shape[1]))
+    if cube.shape == 2:
+        cube = np.resahpe(cube, (1,cube.shape[0], cube.shape[1]))
+    if mode == 'spectral_astropy':
+        cube = spectral_convolution_astropy(cube, lsf)
+    if mode == 'spectral_astorpy_fft':
+        cube = spectral_convolution_astropy_fft(cube, lsf)
+    if mode == 'spectral_aurora_fft':
+        cube = spectral_convolution_aurora_fft(cube, lsf)
+    return cube
 
 def spectral_convolution_astropy(cube, lsf):
+    """
+    Apply Astropy's convolution between the cube and the LSF.
+    
+    Parameters
+    ----------
+    cube : ndarray (3D)
+        Contains the fluxes at each pixel and velocity channel 
+        produced by the gas particles with a given smoothing
+        lengths separately.
+    lsf : ndarray (1D)
+        Normalized kernel. It must correspond to the LSF that recreates the
+        spectral resolution stored in the spectrom instance (object of the
+        SpectromObj class in the configuration.py module). It is recommended
+        to use the create_lsf function defined in this module.
+        
+    Returns
+    -------    
+    cube : ndarray (3D)
+        Cube convolved with the given LSF.
+    """
+    
+    # Code flow:
+    # ==========
+    # > Cube dimensions are assigned
+    # > The convolution is performed between the LSF and the spectrum of each
+    #   pixel in the cube.
     x, y, z = cube.shape
     
     for j in range(y):
@@ -263,7 +441,33 @@ def spectral_convolution_astropy(cube, lsf):
     return cube
 
 
-def spectral_convolution_astropy_fft(cube, lsf):     
+def spectral_convolution_astropy_fft(cube, lsf):
+    """
+    Apply Astropy's fft convolution between the cube and the LSF.
+    
+    Parameters
+    ----------
+    cube : ndarray (3D)
+        Contains the fluxes at each pixel and velocity channel 
+        produced by the gas particles with a given smoothing
+        lengths separately.
+    lsf : ndarray (1D)
+        Normalized kernel. It must correspond to the LSF that recreates the
+        spectral resolution stored in the spectrom instance (object of the
+        SpectromObj class in the configuration.py module). It is recommended
+        to use the create_lsf function defined in this module.
+        
+    Returns
+    -------    
+    cube : ndarray (3D)
+        Cube convolved with the given LSF.
+    """
+    
+    # Code flow:
+    # ==========
+    # > Cube dimensions are assigned
+    # > The convolution is performed between the LSF and the spectrum of each
+    #   pixel in the cube.
     x, y, z = cube.shape
     
     for j in range(y):
@@ -273,6 +477,46 @@ def spectral_convolution_astropy_fft(cube, lsf):
     return cube
 
 def spectral_convolution_astropy_fft(cube, lsf):
+    """
+    Convolve the cube with the LSF using fft. To apply fft, a padding with
+    zeros is first made in the cube and LSF arrays, depending on the 
+    dimensions of these objects.
+
+    Parameters
+    ----------
+    cube : ndarray (3D)
+        Contains the fluxes at each pixel and velocity channel 
+        produced by the gas particles with a given smoothing
+        lengths separately.
+    lsf : ndarray (1D)
+        Normalized kernel. It must correspond to the LSF that recreates the
+        spectral resolution stored in the spectrom instance (object of the
+        SpectromObj class in the configuration.py module). It is recommended
+        to use the create_lsf function defined in this module.
+        
+    Returns
+    -------    
+    cube : ndarray (3D)
+        Cube convolved with the given LSF. The cube has the original 
+        dimensions.
+    """
+    
+    # Code flow:
+    # ==========
+    # > Assign the cube dimensions.
+    # > Extends the PSF with zeros (padding with zeros) over the 
+    #   spectral dimension.
+    # > Apply the fourier transformation to the PSF.
+    # > Extends the cube with zeros (padding with zeros) over the 
+    #   spectral dimension.
+    # > Apply the fourier transformation to the cube over the 
+    #   spectral dimension.
+    # > Makes the product between the cube and the PSF in the fourier 
+    #   space.
+    # > Apply the inverse transform to the product result over the 
+    #   spectral dimension.
+    # > Select the central area of the cube, according to the original
+    #   dimensions.
     fshape = next_fast_len(cube.shape[0]+lsf.shape[0])
     center = fshape - (fshape+1) // 2
 
