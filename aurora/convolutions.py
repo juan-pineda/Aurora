@@ -64,16 +64,53 @@ def next_fast_len(target):
     return match
 
 def next_odd(x):
+    """
+    Find the next odd number.
+    
+    Parameters
+    ----------
+    x : int or float
+        Number
+        
+    Returns
+    -------    
+    x : int
+        Next odd number.
+    """
     x = np.ceil(x)
     if x % 2 == 1:
         return x
     else:
-        return x+1
+        x += 1
+        return x
     
 # Kernel create    
 
-def create_psf(spectom, scale_sigma, size = 20):
-    # Enlarge the kernel adding the effect of the PSF
+def create_psf(spectrom, scale_sigma, size = 20):
+    """
+    Create the PSF with a two-dimensional Gaussian kernel with Astropy.
+    
+    Parameters
+    ----------
+    spectrom : aurora.configuration.SpectromObj
+        Instance of class SpectromObj whose attributes make instrumental
+        properties available. See definitions in configuration.py.
+    scale_sigma : float
+        Sigma associated with a spatial smoothing in simulation
+    size = int, optional
+        Size of the kernel array. Default = 20 * stddev.
+        
+    Returns
+    -------    
+    psf : ndaaray (2D)
+        Normalized gaussian kernel.
+    """
+    
+    # Code flow:
+    # ==========
+    # > Enlarge the kernel adding the effect of the PSF
+    # > Kernel creation with Astropy
+    # > Normalizes the kernel
     if(spectrom.spatial_res_kpc > 0):
         logging.info(f" (Including the effect of the PSF as well)")
         psf_fwhm = spectrom.spatial_res_kpc.to(
@@ -82,22 +119,93 @@ def create_psf(spectom, scale_sigma, size = 20):
         logging.info(f"Size of the PSF in pixels = {round(psf_sigma, 1)}")
         scale_sigma = np.sqrt(scale_sigma**2+psf_sigma**2)
         logging.info(f"Combination kernel + PSF in pixels = {round(scale_sigma, 1)}")
+        sys.stdout.flush()
     psf = astropy.convolution.Gaussian2DKernel(scale_sigma,
           x_size = next_odd(size * scale_sigma), y_size = next_odd(size * scale_sigma))
     psf = np.array(psf)
     psf = psf / psf.sum()
-    return (psf, scale_sigma)
+    return psf
 
-def create_lsf(lsf_fwhm, size = 20):
+def create_lsf(spectrom, size = 20):
+    """
+    Create the LSF with a one-dimensional Gaussian kernel with Astropy.
+    
+    Parameters
+    ----------
+    spectrom : aurora.configuration.SpectromObj
+        Instance of class SpectromObj whose attributes make instrumental
+        properties available. See definitions in configuration.py.
+    size = int, optional
+        Size of the kernel array. Default = 20 * stddev.
+        
+    Returns
+    -------    
+    psf : ndaaray (1D)
+        Normalized gaussian kernel.
+    """
+    
+    # Code flow:
+    # ==========
+    # > Calculate the stddev of the LSF with the resolving power
+    # > Kernel creation with Astropy
+    # > Normalizes the kernel
+    lsf_fwhm = ct.c/spectrom.spectral_res
+    lsf_fwhm = lsf_fwhm.to('km s^-1').value / spectrom.velocity_sampl.value
     lsf_sigma = lsf_fwhm / ct.fwhm_sigma
-    lsf = astropy.convolution.Gaussian1DKernel(lsf_sigma, x_size = cv.next_odd(size * lsf_sigma))
+    lsf = astropy.convolution.Gaussian1DKernel(lsf_sigma, x_size = next_odd(size * lsf_sigma))
     lsf = np.array(lsf)
-    lsf = lsd / lsf.sum()
+    lsf = lsf / lsf.sum()
     return lsf
 
 # Spatial convolutions
 
-def spatial_astropy_convolution(cube, psf):
+def mode_spatial_convolution(cube, psf, mode = 'spatial_astropy'):
+    """
+    Apply the spatial convolution according to the method selected in the 
+    input parameters.
+    
+    Parameters
+    ----------
+    cube : ndarray (3D)
+        Contains the fluxes at each pixel and velocity channel 
+        produced by the gas particles with a given smoothing
+        lengths separately.
+    psf : ndarray (2D)
+        Normalized kernel.
+    mode : srt, optional
+        Selected method of applying spatial convolution:
+        * spatial_astropy (default)
+        * spatial_astorpy_fft
+        * spatial_aurora_fft
+        
+    Returns
+    -------    
+    cube : ndarray (3D)
+        Cube convolved with the given PSF.
+    """
+    
+    # Code flow:
+    # ==========
+    # > Reshape the cube to 3 dimensions
+    # > Apply the convolution according to the given method
+    if cube.shape == 2:
+        cube = np.resahpe(cube, (1,cube.shape[0], cube.shape[1]))
+    if cube.shape == 2:
+        cube = np.resahpe(cube, (1,cube.shape[0], cube.shape[1]))
+    if mode == 'spatial_astropy':
+        cube = spatial_convolution_astropy(cube, psf)
+    if mode == 'spatial_astorpy_fft':
+        cube = spatial_convolution_astropy_fft(cube, psf)
+    if mode == 'spatial_aurora_fft':
+        cube = spatial_convolution_aurora_fft(cube, psf)
+    return cube
+
+def spatial_convolution_astropy(cube, psf):
+    """
+    
+    
+    """
+    
     n_ch = cube.shape[0]
     for j in range(n_ch):
         if (np.nanmax(cube[j, :, :]) == 0):
@@ -106,7 +214,7 @@ def spatial_astropy_convolution(cube, psf):
         cube[j, :, :] = astropy.convolution.convolve(cube[j,:,:],psf)
     return cube
 
-def fft_spatial_astropy_convolution(cube, psf):   
+def spatial_convolution_astropy_fft(cube, psf):   
     n_ch = cube.shape[0]
     for j in range(n_ch):
         if (np.nanmax(cube[j, :, :]) == 0):
@@ -116,7 +224,7 @@ def fft_spatial_astropy_convolution(cube, psf):
                                                    fft_pad = True, allow_huge=True) 
     return cube
 
-def fft_spatial_aurora_convolution(cube, psf):
+def spatial_convolution_aurora_fft(cube, psf):
     x, y, z = cube.shape
     
     fshape = next_fast_len(y + psf.shape[0])
@@ -146,7 +254,7 @@ def fft_spatial_aurora_convolution(cube, psf):
 
 # Spectral convolutions
 
-def spectral_astropy_convolution(cube, lsf):
+def spectral_convolution_astropy(cube, lsf):
     x, y, z = cube.shape
     
     for j in range(y):
@@ -155,7 +263,7 @@ def spectral_astropy_convolution(cube, lsf):
     return cube
 
 
-def fft_spectral_astropy_convolution(cube, lsf):     
+def spectral_convolution_astropy_fft(cube, lsf):     
     x, y, z = cube.shape
     
     for j in range(y):
@@ -164,15 +272,15 @@ def fft_spectral_astropy_convolution(cube, lsf):
                                                    fft_pad = True, allow_huge=True)
     return cube
 
-def fft_spectral_aurora_convolution(cube, lsf):
-    fshape = cv.next_fast_len(cube.shape[0]+lsf.shape[0])
+def spectral_convolution_astropy_fft(cube, lsf):
+    fshape = next_fast_len(cube.shape[0]+lsf.shape[0])
     center = fshape - (fshape+1) // 2
 
     lead_zeros = np.zeros(center - lsf.shape[0] // 2)
     trail_zeros = np.zeros(fshape - lsf.shape[0] - lead_zeros.shape[0])
     lsf = np.concatenate((lead_zeros, lsf, trail_zeros), axis=0)
     lsf = np.fft.fftshift(lsf)
-    lsf = psf.reshape(lsf.size, 1, 1)
+    lsf = lsf.reshape(lsf.size, 1, 1)
     lsf = np.fft.rfft(lsf, axis=0)
 
     index = slice(center - cube.shape[0] //
