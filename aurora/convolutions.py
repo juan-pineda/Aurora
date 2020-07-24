@@ -13,8 +13,9 @@ The only convolution not found in this module is the analytical spectral
 convolution stored in the spectrum_tools.py module.
 """
 
-import numpy as np
 import logging
+import numpy as np
+import scipy.fftpack.next_fast_len as next_fast_len_scipy
 
 import astropy.convolution
 from bisect import bisect_left
@@ -164,7 +165,7 @@ def create_lsf(spectrom, size = 20):
     # > Calculate the stddev of the LSF with the resolving power
     # > Kernel creation with Astropy
     # > Normalizes the kernel
-    lsf_fwhm = ct.c/spectrom.spectral_res
+    lsf_fwhm = ct.c / spectrom.spectral_res
     lsf_fwhm = lsf_fwhm.to('km s^-1').value / spectrom.velocity_sampl.value
     lsf_sigma = lsf_fwhm / ct.fwhm_sigma
     lsf = astropy.convolution.Gaussian1DKernel(lsf_sigma, x_size = next_odd(size * lsf_sigma))
@@ -335,7 +336,7 @@ def spatial_convolution_aurora_fft(cube, psf):
     #   dimensions.
     x, y, z = cube.shape
     
-    fshape = next_fast_len(y + psf.shape[0])
+    fshape = next_fast_len_scipy(y + psf.shape[0])
     center = fshape - (fshape+1) // 2
     new_psf = np.zeros([1, fshape, fshape])
     index = slice(center - psf.shape[0] // 2, center + (psf.shape[0] + 1) // 2)
@@ -517,7 +518,7 @@ def spectral_convolution_astropy_fft(cube, lsf):
     #   spectral dimension.
     # > Select the central area of the cube, according to the original
     #   dimensions.
-    fshape = next_fast_len(cube.shape[0]+lsf.shape[0])
+    fshape = next_fast_len_scipy(cube.shape[0]+lsf.shape[0])
     center = fshape - (fshape+1) // 2
 
     lead_zeros = np.zeros(center - lsf.shape[0] // 2)
