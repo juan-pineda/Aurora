@@ -52,6 +52,16 @@ def cube_resampling(cube, new_cube):
     Interpolate a 3D master datacube to new spatial/spectral coordinates
     at once.
     
+    Notes
+    -----
+    * If the new dimensions are integer multiples of the original
+      dimensions, it is recommended to use the bin_array function
+      defined in this module.
+    * The flux stored in the channels of the cube is per unit of 
+      velocity, for this reason if the result of the total flux
+      is to be compared, the cube must be multiplied by the width
+      of the channels.
+    
     Parameters
     ----------
     cube : aurora.datacube.DatacubeObj
@@ -83,5 +93,7 @@ def cube_resampling(cube, new_cube):
     new_channels = origin_spectral + np.arange(new_cube.spectral_dim)/channelratio
     X, Y, Z = np.meshgrid(new_positions, new_positions, new_channels)
     
-    new_cube.cube = ndimage.map_coordinates(cube.cube * cube.velocity_sampl.value, [Z, X, Y], order=1).T
-    new_cube.cube = (new_cube.cube * channelratio_dim) / (pixratio**2 * new_cube.velocity_sampl.value)
+    new_cube.cube = ndimage.map_coordinates(cube.cube, [Z, X, Y], order=1).T
+    new_cube.cube = (new_cube.cube) / (pixratio**2)
+
+    
