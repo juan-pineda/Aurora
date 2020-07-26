@@ -228,16 +228,36 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
              x[ok_level[unique_ind]], i] += np.transpose(eff_flux)
     return cube
 
-
-def __cube_convolution(geom, run, spectrom, cube):
+def __cube_spatial_convolution(run, spectrom, cube):
     """
     Perform the spatial smoothing of fluxes projected to a 4D-grid.
+    
+    Notes
+    -----
     Consider two kernels: the multi-scale kernels of the simulation and
-    the spatial PSF if it was defined
+    the spatial PSF if spectrom.spatial_res was defined. 
 
     Parameters
     ----------
+    run : aurora.configuration.RunObj
+        Instance of class RunObj whose attributes make code computational
+        performance properties available. See definitions in
+        configuration.py.
+    spectrom : aurora.configuration.SpectromObj
+        Instance of class SpectromObj whose attributes make instrumental
+        properties available. See definitions in configuration.py.
+    cube : ndarray (4D)
+        Contains the fluxes at each pixel and velocity channel 
+        produced by the gas particles with a given smoothing
+        lengths separately.
     """
+    
+    # Code flow:
+    # ==========
+    # > Create the kernel smoothing.
+    # > Adds the effect of spatial resolution in the kernel.
+    # > Apply the spatial convolution method as configured in
+    #   spectrum.spatial_convolution
     cube_side, n_ch = spectrom.cube_dims()
     for i in range(run.nfft):
         logging.info(f"Preparing for spatial smoothing, kernel = {round(run.fft_hsml_limits[i].value*1000, 1)} pc")
@@ -245,44 +265,37 @@ def __cube_convolution(geom, run, spectrom, cube):
         # Kernel smoothing
         scale_fwhm = (run.fft_hsml_limits[i] / spectrom.pixsize).decompose().value
         scale_sigma = spectrom.kernel_scale * scale_fwhm / ct.fwhm_sigma
-        logging.info(f"Size of the kernel in pixels = {round(scale_sigma, 1)}")
+        logging.info(f"Size of the kernel in pixels = {round(scale_sigma, 1)}")  
         # Enlarge the kernel adding the effect of the PSF
-        if(spectrom.spatial_res_kpc > 0):
-            logging.info(f" (Including the effect of the PSF as well)")
-####            psf_fwhm = spectrom.spatial_res.value / spectrom.spatial_sampl.value
-            psf_fwhm = spectrom.spatial_res_kpc.to(
-                "pc").value / spectrom.pixsize.to("pc").value
-            psf_sigma = psf_fwhm / ct.fwhm_sigma
-            logging.info(f"Size of the PSF in pixels = {round(psf_sigma, 1)}")
-            scale_sigma = np.sqrt(scale_sigma**2+psf_sigma**2)
-            logging.info(f"Combination kernel + PSF in pixels = {round(scale_sigma, 1)}")
-        if (scale_sigma <= 0.5):
-            logging.info(f"-- Small kernel -> skip convolution")
-            sys.stdout.flush()
-            continue
+        psf = cv.create_psf(spectrom, scale_sigma)
+        # Spatial convolution
+        cube[:, :, :, i] = cv.mode_spatial_convolution(cube[:, :, :, i], psf)
 
-# This is the way I performed the psf convolution until 20/07/2018
-# Then I realized the FFT is introducing non-isotropic noise, aligned along the axes
-# And realized as well that shaping the psf in a square of a side = 8-sigma is not
-# enough. When the log(flux) is considered, sharp edges and square patterns appear
-#        m = dc.DatacubeObj()
-#        m.cube = cube[:, :, :, i]
-#        psf_fwhm = scale_sigma * ct.fwhm_sigma
-#        cv.spatial_convolution_iter(m.cube, psf_fwhm)
-#        cube[:, :, :, i] = m.cube
+def __cube_spectral_convolution(spectrom, cube, mode = 'analytical'):
+    """
+    Perform the spectral smoothing of fluxes projected to a 3D-grid.
+    
+    Notes
+    -----
+    If spectrom.spectral_res was defined, by default a Gaussian kernel
+    would be created to represent the LSF to apply spectral smoothing.
 
-# So, in the same date 20/07/2018 I decided to recover a simpler scheme that might take
-# longer, but it is way cleaner:
-        for j in range(n_ch):
-            if (np.nanmax(cube[j, :, :, i]) == 0):
-                logging.info(f"No flux at this scale/velocity channel -> skip convolution")
-                continue
-            side = cv.next_odd(20*scale_sigma)  
-            psf = astropy.convolution.Gaussian2DKernel(scale_sigma, x_size=side, y_size=side)
-# FFT or spatial convolution? 
-# It depends on whether the noise introduced by FFT schemes is important or not
-#            channel = astropy.convolution.convolve_fft(cube[j,:,:,i], psf,psf_pad=True,normalize_kernel=np.sum,allow_huge=True)
-            channel = astropy.convolution.convolve(cube[j,:,:,i],psf)
-            cube[j, :, :, i] = 0.
-            cube[j, :, :, i] += channel
-
+    Parameters
+    ----------
+    spectrom : aurora.configuration.SpectromObj
+        Instance of class SpectromObj whose attributes make instrumental
+        properties available. See definitions in configuration.py.
+    cube : ndarray (3D)
+        Contains the fluxes at each pixel and velocity channel 
+        produced by the gas particles.
+    """
+    # Code flow:
+    # ==========
+    # > Create the kernel. 
+    # > Apply the spectral convolution method as configured in
+    #   spectrum.spectral_convolution, in case it is not analytical convolution.
+    if mode != 'analytical' and spectrom.spectral_res > 0:
+        # Kernel create
+        lsf = cv.create_lsf(spectrom)
+        # Spectral convolution
+        cube = cv.mode_spectral_convolution(cube, lsf)        

@@ -4,7 +4,7 @@ emitters
 ========
 
 Aurora module that contains methods in charge of building the objects of the
-class emitters, responsible for grouping the main parameters to compute the
+class Emitters, responsible for grouping the main parameters to compute the
 H-alpha emission of a bunch of particles using the main physical quantities
 in the simulation, and deriving other important physical quantites from them.
 
@@ -39,7 +39,7 @@ from scipy import special
 from astropy import units as unit
 
 from . import constants as ct
-from . import gasProps_sBird as bird
+from . import rahmati as rahmati
 
 class Emitters:
     """
@@ -293,8 +293,8 @@ class Emitters:
             Fraction of ionized hydrogen for a bunch of particles.
         """
 
-        a = bird.GasProperties(self.redshift)
-        HII = 1 - a._neutral_fraction(ct.Xh * (self.dens.to("g cm**-3")/ct.m_p.to("g")).value, self.temp.value)
+        a = rahmati.Rahmati_HII(self.redshift)
+        HII = 1 - a.neutral_fraction(ct.Xh * (self.dens.to("g cm**-3")/ct.m_p.to("g")).value, self.temp.value)
         self.HII = HII
 
     def get_mu(self):

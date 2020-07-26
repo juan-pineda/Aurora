@@ -43,7 +43,7 @@ from . import snapshot_tools as snap
 from . import spectrum_tools as spec
 from . import configuration as config
 from . import array_operations as arr
-from . import gasProps_sBird as bird
+from . import rahmati as rahmati
 
 warnings.filterwarnings("ignore")
 
@@ -103,8 +103,9 @@ def spectrom_mock(ConfigFile):
     snap.set_hsml_limits(run, data_gas)
     spectrom.oversample()
     cube = spec.__project_all_chunks(geom, run, spectrom, data_gas)
-    spec.__cube_convolution(geom, run, spectrom, cube)
+    spec.__cube_spatial_convolution(run, spectrom, cube)
     cube = np.sum(cube, axis=3)
+    spec.__cube_spectral_convolution(spectrom, cube)
 
     # Code flow:
     # =====================
