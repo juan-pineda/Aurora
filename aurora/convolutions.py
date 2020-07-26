@@ -393,12 +393,7 @@ def mode_spectral_convolution(cube, lsf, mode = 'spectral_astropy'):
     
     # Code flow:
     # ==========
-    # > Reshape the cube to 3 dimensions
     # > Apply the convolution according to the given method
-    if cube.shape == 2:
-        cube = np.resahpe(cube, (1,cube.shape[0], cube.shape[1]))
-    if cube.shape == 2:
-        cube = np.resahpe(cube, (1,cube.shape[0], cube.shape[1]))
     if mode == 'spectral_astropy':
         cube = spectral_convolution_astropy(cube, lsf)
     if mode == 'spectral_astorpy_fft':
