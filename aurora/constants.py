@@ -1,3 +1,13 @@
+"""
+=========
+constants
+=========
+
+Aurora module that contains the most important constants for the
+calculation of all the physical properties necessaries in the code.
+
+"""
+
 import math
 import numpy as np
 from astropy import units as unit

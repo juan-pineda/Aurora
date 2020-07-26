@@ -445,7 +445,7 @@ class SpectromObj():
         redshift_ref : float
             Reference redshift used to calculate the fraction
             of ionized hydrogen using the procedure exposed in
-            (Rahmati et al 2012). See more info in ########.py.
+            (Rahmati et al 2012). See more info in rahmati.py.
         pixsize : astropy.units.core.Unit
             Pixel size of the instrument in (pc).
         velocity_sampl : astropy.units.core.Unit
