@@ -15,7 +15,7 @@ convolution stored in the spectrum_tools.py module.
 
 import logging
 import numpy as np
-import scipy.fftpack.next_fast_len as next_fast_len_scipy
+from scipy import fftpack
 
 import astropy.convolution
 from bisect import bisect_left
@@ -336,7 +336,7 @@ def spatial_convolution_aurora_fft(cube, psf):
     #   dimensions.
     x, y, z = cube.shape
     
-    fshape = next_fast_len_scipy(y + psf.shape[0])
+    fshape = fftpack.next_fast_len(y + psf.shape[0])
     center = fshape - (fshape+1) // 2
     new_psf = np.zeros([1, fshape, fshape])
     index = slice(center - psf.shape[0] // 2, center + (psf.shape[0] + 1) // 2)
@@ -518,7 +518,7 @@ def spectral_convolution_astropy_fft(cube, lsf):
     #   spectral dimension.
     # > Select the central area of the cube, according to the original
     #   dimensions.
-    fshape = next_fast_len_scipy(cube.shape[0]+lsf.shape[0])
+    fshape = fftpack.next_fast_len(cube.shape[0]+lsf.shape[0])
     center = fshape - (fshape+1) // 2
 
     lead_zeros = np.zeros(center - lsf.shape[0] // 2)
