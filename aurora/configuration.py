@@ -163,6 +163,27 @@ class RunObj():
             Number of different scales of particles.
         fft_hsml_min : astropy.units.core.Unit
             Minimum size of particles in (pc).
+        spatial_convolution : str
+            Keyword to store the method by which the spatial convolution
+            will be performed.
+            Options:
+            *  spatial_astropy (default): Convolution using the Astropy
+               library.
+            *  spatial_astorpy_fft : Convolution using Fast Fourier
+               transform from the Astropy library.
+            *  spatial_aurora_fft : Convolution using Fast Fourier
+               transform.
+        spectral_convolution : str
+            Keyword to store the method by which the spectral convolution
+            will be performed.
+            Options:
+         *  analytical (default): Analytical convolution between the 
+            Gaussian emission lines and the Gaussian kernel of the LSF.
+         *  spectral_astropy : Convolution using the Astropy library.
+         *  spectral_astorpy_fft : Convolution using Fast Fourier 
+            transform from the Astropy library.
+         *  spectral_aurora_fft : Convolution using Fast Fourier
+            transform.
         """
 
         run_config = configparser.SafeConfigParser({}, allow_no_value=True)
@@ -181,6 +202,10 @@ class RunObj():
         self.nfft = read_var(run_config, "run", "nfft", int)
         self.fft_hsml_min = read_var(run_config, "run", "fft_hsml_min", float,
                                      unit.pc)
+        self.spatial_convolution = read_var(run_config, "run", 
+                                            "spatial_convolution", str)
+        self.spectral_convolution = read_var(run_config, "run", 
+                                             "spectral_convolution", str)
 
         
 class GeometryObj():

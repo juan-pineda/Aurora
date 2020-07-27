@@ -50,7 +50,9 @@ default_values["run"] = {
     "snapshot_id": [""],
     "reference_id": [""],
     "overwrite": [False],
-    "ncpu": [1]
+    "ncpu": [1],
+    "spectral_convolution": ["analytical"],
+    "spatial_convolution": ["spatial_astropy"]
 }
 
 default_values["spectrom"] = {
@@ -62,7 +64,6 @@ default_values["spectrom"] = {
     "lum_dens_relation": ["square"],
     "density_threshold": ["Not"],
     "equivalent_luminosity": ["min"]
-
 }
 
 Instruments = {}
