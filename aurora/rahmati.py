@@ -47,27 +47,26 @@ class Rahmati_HII:
         # Boltzmann constant in (erg/K)
         self.boltzmann = ct.k_B.value
         
-        # The gray absorption cross-section in (cm**2)
-        sigma_vHI = [2.59e-18, 2.37e-18, 2.27e-18, 2.15e-18,
-                     2.02e-18, 1.94e-18] 
+        # Redshift range where the correction can be applied
+        z = [0, 1, 2, 3, 4, 5]
         
         # The hydrogen photoionization rate by the metagalactic ultra-violet
         # background radiation in (s**-1) .
         gamma_UVB = [3.99e-14, 3.03e-13, 6e-13, 5.53e-13,
                      4.31e-13, 3.52e-13]
-        # Redshift range where the correction can be applied
-        z = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-        self.redshift_coverage = True
         
-        if redshift > z[-1]:
-            self.redshift_coverage = False
-            logging.warning(f"no self-shielding at z=", redshift)
+        # The gray absorption cross-section in (cm**2)
+        sigma_vHI = [2.59e-18, 2.37e-18, 2.27e-18, 2.15e-18,
+                     2.02e-18, 1.94e-18] 
+                
+        if redshift > 5:
+            logging.warning(" Select a redshift <= 5. No self-shielding at z = {}".format(self.redshift))
         else:
             gamma_inter = intp.interp1d(z, gamma_UVB)
+            self.gamma_UVB = gamma_inter(redshift)
             sigma_inter = intp.interp1d(z, sigma_vHI)
             self.sigma_vHI = sigma_inter(redshift)
-            self.gamma_UVB = gamma_inter(redshift)
-            
+                        
     def self_shield_num_dens(self, temp):
         """
         Calculate the critical self-shielding number density 
@@ -91,10 +90,8 @@ class Rahmati_HII:
             Critical self-shielding number density in (atoms cm**-3)
             for a bunch of particles.
         """
-        
-        T4 = temp/1e4
-        G12 = self.gamma_UVB/1e-12
-        n_Hssh = 6.73e-3 * (self.sigma_vHI/2.49e-18)**(-2./3) * (T4)**0.17 * (G12)**(2./
+     
+        n_Hssh = 6.73e-3 * (self.sigma_vHI/2.49e-18)**(-2./3) * (temp/1e4)**0.17 * (self.gamma_UVB/1e-12)**(2./
                  3)* (self.f_bar/0.17)**(-1./3) 
         return n_Hssh
     
@@ -119,7 +116,7 @@ class Rahmati_HII:
 
     def photoionization_rate(self, temp, n_H):
         """
-        Calculate the total photoionization rate - (Rahmati et al 2013) eq. 13.
+        Calculate the total photoionization rate - (Rahmati et al 2013) eq. 14.
                
         Parameters
         ----------
@@ -137,13 +134,43 @@ class Rahmati_HII:
         # Code flow:
         # =====================
         # > Calculate the critical self-shielding number density.  
-        # > Calculate the photoionization ratio. 
+        # > Calculate the photoionization ratio - (Rahmati et al 2013) eq. 14. 
         # > Calculate the total photoionization rate.  
         n_Hssh = self.self_shield_num_dens(temp)
-        phot_ratio = 0.98 * (1 + (n_H/n_Hssh)**1.64)**-2.28 + 0.02 * (1 + n_H/n_Hssh)**-0.84
-        photo_rate = phot_ratio * self.gamma_UVB
+        photo_ratio = 0.98 * (1 + (n_H/n_Hssh)**1.64)**(-2.28) + 0.02 * (1 + n_H/n_Hssh)**(-0.84)
+        photo_rate = photo_ratio * self.gamma_UVB
         return photo_rate
-
+    
+    def collisional_ionization_rate(self, temp):
+        """
+        Calculate the collisional ionization rate in (cm**3 s**-1)
+        - (Rahmati et al 2013) eq. A6.
+        
+        Notes
+        -----
+        To calculate the collision ionization rate in (s**-1), the 
+        result of this function must be multiplied by:
+            * (1-n)n_H,
+        where n is the neutral hydrogen fraction and n_H is 
+        the numerical hydrogen density in (cm**-3).
+        
+        The collisional ionization rate in (s**-1) is given by:
+            Lambda_T(1-n)n_H
+         
+        Parameters
+        ----------
+        temp : int or float
+            Temperature in (K) for a bunch of particles.
+        
+        Returns
+        -------
+        Lambda_T : float 
+            Collisional ionization rate in (cm**3 s**-1) for a bunch 
+            of particles.
+        """
+        
+        Lambda_T = 1.17e-10 * np.sqrt(temp) * np.exp(-157809./temp) / (1 + np.sqrt(temp/1e5))
+        return Lambda_T
     def neutral_fraction(self, n_H, temp):
         """
         Calculate the hydrogen neutral fraction, using the procedure exposed 
@@ -166,14 +193,13 @@ class Rahmati_HII:
         # =====================
         # > Calculate the recombination rate. 
         # > Calculate the total photoionization rate.
-        # > Calculate Lambda_T - (Rahmati et al 2013) eq. A6. 
+        # > Calculate the collisional ionization rate. 
         # > Calculate the coefficients A and B in Appendix A 
         #   - (Rahmati et al 2013).
         # > Calculate the hydrogen neutral fraction.        
         alpha_A = self.recombination_rate(temp)
         photo_rate = self.photoionization_rate(n_H, temp)
-        
-        Lambda_T = 1.17e-10 * temp**0.5 * np.exp(-157809./temp) / (1 + np.sqrt(temp/1e5))
+        Lambda_T = self.collisional_ionization_rate(temp)
         A = alpha_A + Lambda_T
         B = 2 * alpha_A + photo_rate/n_H + Lambda_T
         n = (B - np.sqrt(B**2-4 * A * alpha_A)) / (2*A)
