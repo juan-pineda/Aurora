@@ -181,7 +181,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     channel_center, channel_width = em.get_vect_channels(spectrom.vel_channels, spectrom.velocity_sampl, n_ch)
 
     # Spectral convolution
-    if(spectrom.spectral_res > 0):
+    if(spectrom.spectral_res > 0 and run.spectral_convolution == 'analytical'):
         psf_fwhm = ct.c/spectrom.spectral_res
         psf_sigma = psf_fwhm / ct.fwhm_sigma
         line_sigma = np.sqrt(line_sigma**2+psf_sigma**2)
@@ -269,9 +269,9 @@ def __cube_spatial_convolution(run, spectrom, cube):
         # Enlarge the kernel adding the effect of the PSF
         psf = cv.create_psf(spectrom, scale_sigma)
         # Spatial convolution
-        cube[:, :, :, i] = cv.mode_spatial_convolution(cube[:, :, :, i], psf)
+        cube[:, :, :, i] = cv.mode_spatial_convolution(cube[:, :, :, i], psf, run.spatial_convolution)
 
-def __cube_spectral_convolution(spectrom, cube, mode = 'analytical'):
+def __cube_spectral_convolution(run, spectrom, cube, mode = 'analytical'):
     """
     Perform the spectral smoothing of fluxes projected to a 3D-grid.
     
@@ -282,6 +282,10 @@ def __cube_spectral_convolution(spectrom, cube, mode = 'analytical'):
 
     Parameters
     ----------
+    run : aurora.configuration.RunObj
+        Instance of class RunObj whose attributes make code computational
+        performance properties available. See definitions in
+        configuration.py.    
     spectrom : aurora.configuration.SpectromObj
         Instance of class SpectromObj whose attributes make instrumental
         properties available. See definitions in configuration.py.
@@ -298,4 +302,4 @@ def __cube_spectral_convolution(spectrom, cube, mode = 'analytical'):
         # Kernel create
         lsf = cv.create_lsf(spectrom)
         # Spectral convolution
-        cube = cv.mode_spectral_convolution(cube, lsf)        
+        cube = cv.mode_spectral_convolution(cube, lsf, run.spectral_convolution)        

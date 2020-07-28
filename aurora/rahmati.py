@@ -18,21 +18,12 @@ class Rahmati_HII:
     """
     Class implementing the self-shielding correction to calculate hydrogen 
     neutral fraction using the procedure exposed in (Rahmati et al 2013).  
-        """
+    """
 
     def __init__(self, redshift, f_bar=0.17):
         """
         Sets the necessary parameters for the correction, by interpolation 
         according to the input redshift.
-        
-        Notes
-        -----
-        * The values of sigma_vHI and gamma_UVB < 5 in FG09 UVB from 
-          (Rahmati et al 2013).
-        * The values of sigma_vHI and gamma_UVB > 5 are calculated 
-          by fitting a power law and extrapolating:
-            > Power law for sigma_vHI: -1.12e-19*(z-3.5)+2.1e-18
-            > Power law for gamma_UVB: -8.66e-14*(z-3.5)+4.84e-13
         
         Parameters
         ----------
@@ -58,12 +49,12 @@ class Rahmati_HII:
         
         # The gray absorption cross-section in (cm**2)
         sigma_vHI = [2.59e-18, 2.37e-18, 2.27e-18, 2.15e-18,
-                     2.02e-18, 1.94e-18, 1.82e-18, 1.71e-18, 1.60e-18] 
+                     2.02e-18, 1.94e-18] 
         
         # The hydrogen photoionization rate by the metagalactic ultra-violet
         # background radiation in (s**-1) .
         gamma_UVB = [3.99e-14, 3.03e-13, 6e-13, 5.53e-13,
-                     4.31e-13, 3.52e-13, 2.678e-13,  1.81e-13, 9.43e-14]
+                     4.31e-13, 3.52e-13]
         # Redshift range where the correction can be applied
         z = [0, 1, 2, 3, 4, 5, 6, 7, 8]
         self.redshift_coverage = True
@@ -182,9 +173,7 @@ class Rahmati_HII:
         alpha_A = self.recombination_rate(temp)
         photo_rate = self.photoionization_rate(n_H, temp)
         
-        Lambda_T = 1.17e-10 * temp**0.5 * \
-            np.exp(-157809./temp) / (1 + np.sqrt(temp/1e5))
-        
+        Lambda_T = 1.17e-10 * temp**0.5 * np.exp(-157809./temp) / (1 + np.sqrt(temp/1e5))
         A = alpha_A + Lambda_T
         B = 2 * alpha_A + photo_rate/n_H + Lambda_T
         n = (B - np.sqrt(B**2-4 * A * alpha_A)) / (2*A)

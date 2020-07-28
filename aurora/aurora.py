@@ -105,7 +105,7 @@ def spectrom_mock(ConfigFile):
     cube = spec.__project_all_chunks(geom, run, spectrom, data_gas)
     spec.__cube_spatial_convolution(run, spectrom, cube)
     cube = np.sum(cube, axis=3)
-    spec.__cube_spectral_convolution(spectrom, cube)
+    spec.__cube_spectral_convolution(run, spectrom, cube)
 
     # Code flow:
     # =====================
