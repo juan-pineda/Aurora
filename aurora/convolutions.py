@@ -286,7 +286,7 @@ def spatial_convolution_aurora_fft(cube, psf):
     index = slice(center - psf.shape[0] // 2, center + (psf.shape[0] + 1) // 2)
     new_psf[0,index, index] = psf
     
-    psf = np.fft.fftshift(new_psf)
+    psf = np.fft.ifftshift(new_psf)
     psf = np.fft.rfft2(psf)
     
     index = slice(center - y // 2, center + (y + 1) // 2)
@@ -463,7 +463,7 @@ def spectral_convolution_astropy_fft(cube, lsf):
     lead_zeros = np.zeros(center - lsf.shape[0] // 2)
     trail_zeros = np.zeros(fshape - lsf.shape[0] - lead_zeros.shape[0])
     lsf = np.concatenate((lead_zeros, lsf, trail_zeros), axis=0)
-    lsf = np.fft.fftshift(lsf)
+    lsf = np.fft.ifftshift(lsf)
     lsf = lsf.reshape(lsf.size, 1, 1)
     lsf = np.fft.rfft(lsf, axis=0)
 
