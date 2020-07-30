@@ -29,6 +29,11 @@ class DatacubeObj():
     def read_data(self, input_file):
         """
         Read the data and header of the specified datacube in fits format
+        
+        Parameters
+        ----------        
+        input_file : str
+            Datacube name in fits format
         """
 
         hdulist = fits.open(input_file)
@@ -39,7 +44,6 @@ class DatacubeObj():
         """
         Extract main information from the cards in the header
         """
-
         self.pixsize = self.header["CDELT1"] * unit.pc
         self.velocity_sampl = self.header["CDELT3"] * unit.km/unit.s
         self.spatial_dim = self.header["NAXIS1"]
@@ -58,12 +62,17 @@ class DatacubeObj():
         """
         Assign entered attributes.
         
-        :param float pixsize: In pc.
-        :param float velocity_sampl: In km/s.
-        :param int spatial_dim: Number of pixels per cube side in 
-                                the spatial dimension.
-        :param int spectral_dim: Number of channels in the spectral 
-                                 dimension.                         
+        Parameters
+        ----------  
+        pixsize : float
+            Pixel size of the instrument in (pc).
+        velocity_sampl : float
+            Spectral sampling of the instrument in velocity units
+            (km s-1).
+        spatial_dim : int
+            Number of pixels per side of the field of view.
+        spectral_dim : int
+            Number of spectral channels of the instrument.                        
         """
         self.pixsize = pixsize * unit.pc
         self.velocity_sampl = velocity_sampl * unit.km/unit.s
@@ -195,6 +204,16 @@ class DatacubeObj():
 
 
     def clean_lowflux(self, thresh = 11):
+        """
+        Clear the background flux on the flux map, velocity map, 
+        and dispersion map. It only stores the values greater 
+        than threshold.
+        
+        Parameters
+        ----------  
+        thresh : int, opcional
+            Threshold to store the values.
+        """
         zeros = (np.log10(np.max(self.fluxmap)) - np.log10(self.fluxmap) > thresh)
         self.fluxmap[zeros] = np.nan
         self.velmap[zeros] = np.nan
