@@ -132,9 +132,9 @@ class Emitters:
         if mode == "square":
             Halpha_lum = luminosity * (self.dens_ion)**2
         elif mode == "linear":
-            Halpha_lum = luminosity * (self.dens_ion)
+            Halpha_lum = luminosity * (self.dens_ion.value) * unit.cm**-6
         elif mode == "root":
-            Halpha_lum = luminosity * (self.dens_ion)**0.5
+            Halpha_lum = luminosity * (self.dens_ion.value)**0.5 * unit.cm**-6
         self.Halpha_lum = Halpha_lum.to("erg s**-1")
 
     def density_cut(self, density_threshold = "Not", equivalent_luminosity = "min"):
