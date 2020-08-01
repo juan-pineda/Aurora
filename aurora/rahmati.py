@@ -72,13 +72,6 @@ class Rahmati_HII:
         Calculate the critical self-shielding number density 
         - (Rahmati et al 2013) eq. 13.
         
-        gray_opac and gamma_UVB are parameters of the UVB used.
-        
-        gray_opac is in cm^2 (2.49e-18 is HM01 at z=3)
-        gamma_UVB in 1/s (1.16e-12 is HM01 at z=3)
-        
-        f_bar is the baryon fraction. 0.17 is roughly 0.045/0.265
-        
         Parameters
         ----------
         temp : int or float
@@ -202,5 +195,5 @@ class Rahmati_HII:
         Lambda_T = self.collisional_ionization_rate(temp)
         A = alpha_A + Lambda_T
         B = 2 * alpha_A + photo_rate/n_H + Lambda_T
-        n = (B - np.sqrt(B**2-4 * A * alpha_A)) / (2*A)
+        n = (B - np.sqrt(B**2 - 4*A*alpha_A)) / (2*A)
         return n
