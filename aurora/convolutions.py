@@ -14,6 +14,7 @@ The only convolution not found in this module is the analytical spectral
 convolution stored in the spectrum_tools.py module.
 """
 
+import sys
 import logging
 import numpy as np
 from scipy import fftpack
