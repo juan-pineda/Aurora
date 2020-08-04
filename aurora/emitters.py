@@ -259,8 +259,8 @@ class Emitters:
 
         Returns
         -------
-        dens_ion : astropy.units.quantity.Quantity
-            Ions number density in (cm**-3) for a bunch of particles.
+        HII : ndarray
+            Fraction of ionized hydrogen for a bunch of particles.
         """
         
         HII = np.ones(len(temp))
