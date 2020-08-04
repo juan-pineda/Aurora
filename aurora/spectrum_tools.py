@@ -204,7 +204,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
 
     # Divide by the effective channel width
     flux_in_channels = (flux_in_channels.to("erg s^-1").value
-        / spectrom.velocity_sampl.to("km s^-1").value/geom.dl.to("cm").value**2)
+        /spectrom.velocity_sampl.to("km s^-1").value/(4*np.pi*geom.dl.to("cm").value**2))
 
     # Compute the fluxes scale by scale
     for i in np.unique(scale):
