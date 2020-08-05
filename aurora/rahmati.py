@@ -84,8 +84,8 @@ class Rahmati_HII:
             for a bunch of particles.
         """
      
-        n_Hssh = 6.73e-3 * (self.sigma_vHI/2.49e-18)**(-2./3) * (temp/1e4)**0.17 * (self.gamma_UVB/1e-12)**(2./
-                 3)* (self.f_bar/0.17)**(-1./3) 
+        n_Hssh = 6.73e-3 * (self.sigma_vHI/2.49e-18)**(-2./3) * (temp/1e4)**(0.17) * (self.gamma_UVB/1e-12)**(2./
+                 3) * (self.f_bar/0.17)**(-1./3) 
         return n_Hssh
     
     def recombination_rate(self, temp):
@@ -104,19 +104,19 @@ class Rahmati_HII:
         """
         
         lamb = 315614. / temp
-        alpha_A = 1.269e-13 * lamb**1.503 / (1 + (lamb/0.522)**0.47)**1.923
+        alpha_A = 1.269e-13 * lamb**(1.503) / (1 + (lamb/0.522)**0.47)**(1.923)
         return alpha_A
 
-    def photoionization_rate(self, temp, n_H):
+    def photoionization_rate(self, n_H, temp):
         """
         Calculate the total photoionization rate - (Rahmati et al 2013) eq. 14.
                
         Parameters
         ----------
-        temp : int or float
-            Temperature in (K) for a bunch of particles.
         n_H : float
             Hydrogen number density in (cm**-3) for a bunch of particles.
+        temp : int or float
+            Temperature in (K) for a bunch of particles.
         
         Returns
         -------
