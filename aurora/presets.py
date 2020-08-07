@@ -45,6 +45,7 @@ default_values["run"] = {
     "instrument": ["custom_"+str(np.random.randint(low=1, high=100))],
     "nfft": [9],
     "fft_hsml_min": [8E-3, unit.pc],
+    "fft_scales": ["Not"],
     "nvector": [4096],
     "simulation_id": [""],
     "snapshot_id": [""],
