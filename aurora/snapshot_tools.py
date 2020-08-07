@@ -7,7 +7,6 @@ Methods that prepare the snapshot to build the synthetic cube.
 """
 
 
-
 import gc
 import sys
 import logging
@@ -42,7 +41,7 @@ def read_snap(input_file):
     except IOError:
         logging.error(f"// The input file specified cannot be read")
         sys.exit()
-
+        
 def filter_array(data, prop, mini, maxi, units):
     """
     For a given array, and a given property (key), it drops all data outside some
@@ -101,19 +100,23 @@ def set_hsml_limits(run, data_gas):
     # =====================
     # > Find the unique elements of data_gas["smooth"]
     # > Assign the smoothing lengths limit values as the case may be
-    if(len(data_gas) > 0):
-        smooth = np.unique(data_gas["smooth"])
-        n_smooth = len(smooth)
-        if((n_smooth > 1) & (n_smooth < 20)):
-            run.fft_hsml_limits = smooth.in_units("kpc")*unit.kpc
-            run.nfft = n_smooth
-        else:
-            run.fft_hsml_limits = np.arange(1.0, run.nfft + 1)
-            run.fft_hsml_limits = run.fft_hsml_limits * run.fft_hsml_min.to("kpc") * unit.kpc
+    if run.fft_scales != "Not":
+        run.fft_hsml_limits = np.loadtxt(run.fft_scales)*unit.kpc
+        run.nfft = len(np.loadtxt(run.fft_scales)+1)
     else:
-        logging.error(f"No gas elements in this snapshot")
-        sys.exit()
-    logging.info(f"// {str(run.nfft).strip()} levels for adaptive smoothing")
+        if(len(data_gas) > 0):
+            smooth = np.unique(data_gas["smooth"])
+            n_smooth = len(smooth)
+            if((n_smooth > 1) & (n_smooth < 20)):
+                run.fft_hsml_limits = smooth.in_units("kpc")*unit.kpc
+                run.nfft = n_smooth
+            else:
+                run.fft_hsml_limits = np.arange(1.0, run.nfft + 1)
+                run.fft_hsml_limits = run.fft_hsml_limits * run.fft_hsml_min.to("kpc") * unit.kpc
+        else:
+            logging.error(f"No gas elements in this snapshot")
+            sys.exit()
+        logging.info(f"// {str(run.nfft).strip()} levels for adaptive smoothing")
 
 def set_snapshots_ready(geom, run, data):
     """
@@ -194,7 +197,7 @@ def set_snapshots_ready(geom, run, data):
     # Apply filters to gas particles if it was specified
     if(geom.gas_minmax_keys != ""):
         data_gas = filter_array(
-            data_gas, geom.gas_minmax_keys, geom.gas_min_values, geom.gas_max_values)
+            data_gas, geom.gas_minmax_keys, geom.gas_min_values, geom.gas_max_values, [geom.gas_minmax_units])
     # Informative prints
     nstars = len(data_star)
     ngas = len(data_gas)
