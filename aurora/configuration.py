@@ -163,6 +163,9 @@ class RunObj():
             Number of different scales of particles.
         fft_hsml_min : astropy.units.core.Unit
             Minimum size of particles in (pc).
+        fft_scales : astropy.units.core.Unit
+            Path of the file that list of different scales to pack the
+            particles in (Kpc).
         spatial_convolution : str
             Keyword to store the method by which the spatial convolution
             will be performed.
@@ -202,6 +205,7 @@ class RunObj():
         self.nfft = read_var(run_config, "run", "nfft", int)
         self.fft_hsml_min = read_var(run_config, "run", "fft_hsml_min", float,
                                      unit.pc)
+        self.fft_scales = read_var(run_config, "run", "fft_scales", str)
         self.spatial_convolution = read_var(run_config, "run", 
                                             "spatial_convolution", str)
         self.spectral_convolution = read_var(run_config, "run", 
@@ -257,8 +261,11 @@ class GeometryObj():
         reference : str
             Path of the reference file.
         gas_minmax_keys : str
-            Specific properties and boundaries to filter the gas
+            Specific properties to filter the gas
             particles.
+        gas_minmax_units : str
+            Units of the specific properties to filter 
+            the gas particles.
         gas_min_values : str
             Minimum boundary to filter the gas particles.
         gas_max_values : str
@@ -284,10 +291,13 @@ class GeometryObj():
 
         self.gas_minmax_keys = read_var(
             g_conf, "geometry", "gas_minmax_keys", str)
+        self.gas_minmax_units = read_var(
+            g_conf, "geometry", "gas_minmax_units", str)
         self.gas_min_values = read_var(
             g_conf, "geometry", "gas_min_values", str)
         self.gas_max_values = read_var(
             g_conf, "geometry", "gas_max_values", str)
+
 
         # Filter the gas particles according to the specified properties and boundaries (if any)
         
