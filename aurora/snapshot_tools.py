@@ -49,7 +49,7 @@ def filter_array(data, prop, mini, maxi, units):
     
     
     Parameters
-    ---------_    
+    ----------    
     data : pynbody.snapshot.FamilySubSnap 
         Array of particles (*gas*, *star*, *dark matter*) to filter. 
      prop : list[str] or str
