@@ -161,7 +161,7 @@ def mode_spatial_convolution(cube, psf, mode = 'spatial_astropy'):
         cube = np.resahpe(cube, (1,cube.shape[0], cube.shape[1]))
     if mode == 'spatial_astropy':
         cube = spatial_convolution_astropy(cube, psf)
-    if mode == 'spatial_astorpy_fft':
+    if mode == 'spatial_astropy_fft':
         cube = spatial_convolution_astropy_fft(cube, psf)
     if mode == 'spatial_aurora_fft':
         cube = spatial_convolution_aurora_fft(cube, psf)
