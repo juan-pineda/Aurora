@@ -157,8 +157,6 @@ def mode_spatial_convolution(cube, psf, mode = 'spatial_astropy'):
     # > Apply the convolution according to the given method
     if cube.shape == 2:
         cube = np.resahpe(cube, (1,cube.shape[0], cube.shape[1]))
-    if cube.shape == 2:
-        cube = np.resahpe(cube, (1,cube.shape[0], cube.shape[1]))
     if mode == 'spatial_astropy':
         cube = spatial_convolution_astropy(cube, psf)
     if mode == 'spatial_astropy_fft':
