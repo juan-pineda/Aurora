@@ -169,10 +169,16 @@ def set_snapshots_ready(geom, run, data):
         logging.info(f"// Inclination: Rotating along y {str(geom.theta).strip()}")
         logging.info(f"// Positon angle: Rotating along z {str(geom.phi).strip()}")
         sys.stdout.flush()
+        # Note: The rotation must be applied for each family of particles in order to 
+        # have compatibility with gadget simulations.
         tr = data_ref.rotate_y(geom.theta.value)
-        tr.apply_to(data)
+        tr.apply_to(data.gas)
+        tr.apply_to(data.star)
+        tr.apply_to(data.dm)
         tr = data_ref.rotate_z(geom.phi.value)
-        tr.apply_to(data)
+        tr.apply_to(data.gas)
+        tr.apply_to(data.star)
+        tr.apply_to(data.dm)
         del data_ref
         gc.collect()
     else:
@@ -186,8 +192,17 @@ def set_snapshots_ready(geom, run, data):
         logging.info(f"// Inclination: Rotating along y {str(geom.theta).strip()}")
         logging.info(f"// Positon angle: Rotating along z {str(geom.phi).strip()}")
         sys.stdout.flush()
-        data.rotate_y(geom.theta.value)
-        data.rotate_z(geom.phi.value)
+        
+        # Note: The rotation must be applied for each family of particles in order to 
+        # have compatibility with gadget simulations.
+        data.gas.rotate_y(geom.theta.value)
+        data.star.rotate_y(geom.theta.value)
+        data.dm.rotate_y(geom.theta.value)
+        
+        data.gas.rotate_z(geom.phi.value)
+        data.star.rotate_z(geom.phi.value)
+        data.dm.rotate_z(geom.phi.value)        
+    
     # Free some memory allocation
     data_gas = data.gas
     data_star = data.star
