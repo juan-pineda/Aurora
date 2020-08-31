@@ -101,6 +101,17 @@ class Emitters:
                 self.get_dens_ion()
             else:
                 pass
+        
+        elif "NeutralHydrogenAbundance" in self.data.loadable_keys():
+            self.HII = 1 - self.data["NeutralHydrogenAbundance"]
+            self.get_mu()
+            self.get_dens_ion()
+            self.get_temp()
+            if self.redshift != 0.:
+                self.get_Rahmati_HII()
+                self.get_dens_ion()
+            else:
+                pass
         else:
             self.get_all_params()
             if self.redshift != 0.:
