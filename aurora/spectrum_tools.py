@@ -165,10 +165,13 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     else:
         start, stop, cube = args
 
-    # This object allows to calculate the Halpha flux, and line broadening
+    # This object allows to calculate the HI or Halpha flux, and line broadening
     em = emit.Emitters(data_gas[start:stop], spectrom.redshift_ref)
     em.get_state()
-    em.get_luminosity(spectrom.lum_dens_rel)
+    if spectrom.obs_type == "HI":
+        em.get_luminosityHI()
+    else:
+        em.get_luminosityHalpha(spectrom.lum_dens_rel)
     em.density_cut(spectrom.density_threshold, spectrom.equivalent_luminosity)
     em.get_vel_dispersion()
 
@@ -177,7 +180,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     # scale to which each particle belongs according to its smoothing lenght
     scale = np.digitize(em.smooth.to("kpc"), 1.1 * run.fft_hsml_limits.to("kpc"))
 
-    line_center, line_sigma, line_flux = em.get_vect_lines(n_ch)
+    line_center, line_sigma, line_flux = em.get_vect_lines(n_ch, spectrom.obs_type)
     channel_center, channel_width = em.get_vect_channels(spectrom.vel_channels, spectrom.velocity_sampl, n_ch)
 
     # Spectral convolution

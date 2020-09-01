@@ -319,7 +319,7 @@ class GeometryObj():
                     "The number of elements in gas_minmax_keys and gas_max_values should be equal")
                 sys.exit()
 
-    def check_redshift(self):
+    def check_redshift(self, spectrom):
         """
         Force consistency between redshift, luminosity distance, central
         observed wavelength and angular diameter distance, superseding
@@ -339,17 +339,26 @@ class GeometryObj():
         
         if ~np.isnan(self.redshift):
             self.dl = cosmo.luminosity_distance(self.redshift)
-            self.lambda_obs = (1 + self.redshift) * ct.Halpha0
+            if spectrom.obs_type == "HI":
+                self.lambda_obs = (1 + self.redshift) * ct.HI0
+            else :
+                self.lambda_obs = (1 + self.redshift) * ct.Halpha0
             self.dist_angular = cosmo.angular_diameter_distance(self.redshift)
         
         else:
             if ~np.isnan(self.dl):
                 self.redshift = z_at_value(cosmo.luminosity_distance, self.dl)
-                self.lambda_obs = (1 + self.redshift) * ct.Halpha0
+                if spectrom.obs_type == "HI":
+                    self.lambda_obs = (1 + self.redshift) * ct.HI0
+                else :
+                    self.lambda_obs = (1 + self.redshift) * ct.Halpha0
                 self.dist_angular = cosmo.angular_diameter_distance(self.redshift)
             
             elif ~np.isnan(self.lambda_obs):
-                self.redshift =  (self.lambda_obs/ct.Halpha0) - 1
+                if spectrom.obs_type == "HI":
+                    self.redshift =  (self.lambda_obs/ct.HI0) - 1
+                else :
+                    self.redshift =  (self.lambda_obs/ct.Halpha0) - 1
                 self.dl = cosmo.luminosity_distance(self.redshift)
                 self.dist_angular = cosmo.angular_diameter_distance(self.redshift)
            
@@ -359,7 +368,10 @@ class GeometryObj():
             elif ~np.isnan(self.dist_angular):
                 self.redshift = z_at_value(cosmo.angular_diameter_distance, self.dist_angular)
                 self.dl = cosmo.luminosity_distance(self.redshift)
-                self.lambda_obs = (1 + self.redshift) * ct.Halpha0
+                if spectrom.obs_type == "HI":
+                    self.lambda_obs = (1 + self.redshift) * ct.HI0
+                else :
+                    self.lambda_obs = (1 + self.redshift) * ct.Halpha0
 
     def kpc_to_arcsec(self, length):
         """
@@ -460,6 +472,9 @@ class SpectromObj():
         
         Returns
         -------
+        obs_type : str
+            Observation type based on the chemical species used as a 
+            tracer. Options: Halpha(Preset) or HI. 
         presets : str
             Name of the instrument to mimic, some options are: sinfoni,
             eagle, ghasp, muse-wide, etc. See all options in presets.py.
@@ -523,6 +538,7 @@ class SpectromObj():
 
         spec_conf = configparser.SafeConfigParser(allow_no_value=True)
         spec_conf.read(ConfigFile)
+        self.obs_type = read_var(spec_conf, "spectrom", "obs_type", str)
         self.presets = read_var(spec_conf, "spectrom", "presets", str)
 
         if self.presets in presets.Instruments.keys():
@@ -940,7 +956,7 @@ def get_allinput(ConfigFile):
     # =====================
     # > Adjust the parameters for self-consistency
     # > Defines the velocity/wavelength channels of the cube
-    geom.check_redshift()
+    geom.check_redshift(spectrom)
     spectrom.check_params(geom)
     spectrom.set_channels(geom)
     spectrom.set_reference()

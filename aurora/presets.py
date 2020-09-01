@@ -57,6 +57,7 @@ default_values["run"] = {
 }
 
 default_values["spectrom"] = {
+    "obs_type": ["Halpha"],
     "presets": [""],
     "oversampling": [1],
     "sigma_cont": [0.0],

@@ -13,10 +13,14 @@ import numpy as np
 from astropy import units as unit
 from astropy import constants as const
 
+# HI wavelength in rest frame [cm]
+HI0 = 21.106 * unit.cm
 # Halpha wavelength in rest frame [cm]
 Halpha0 = 6562.78e-8 * unit.cm
 # NII wavelength in rest frame [cm]
 NII0 = 6584.00e-8 * unit.cm
+# Mass to light ratio for HI emission
+LHI = 5.32e18 * unit.erg/(unit.s*unit.Msun) 
 # Effective Halpha recombination rate
 eff_recomb_rate_halpha = 1.16e-16 / unit.s
 # Hydrogen cosmological fraction

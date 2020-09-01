@@ -59,6 +59,8 @@ class Emitters:
         self.y = np.array(data_gas["y"].in_units("kpc"))*unit.kpc
         self.z = np.array(data_gas["z"].in_units("kpc"))*unit.kpc
         self.dens = np.array(data_gas["rho"].in_units("g cm**-3"))*unit.g/unit.cm**3
+        self.mass = np.unique((np.array(data_gas["mass"].in_units("1.99e+43 g"))*
+                               1.99e+43*unit.g).to("Msun"))
         self.vz = np.array(data_gas["vz"].in_units("cm s**-1"))*unit.cm/unit.s
         self.smooth = np.array(data_gas["smooth"].in_units("kpc"))*unit.kpc
         self.u = np.array(data_gas["u"].in_units("cm**2 s**-2"))*unit.cm**2/unit.s**2
@@ -119,8 +121,22 @@ class Emitters:
                 self.get_dens_ion()
             else:
                 pass
+            
+    def get_luminosityHI(self):
+        """
+        Calculate the neutral Hydrogen emission for each particle in (erg s**-1),
+        based on the mass to light ratio presented in (Walter, 2008 (eq.3)).
         
-    def get_luminosity(self, mode):
+        Returns
+        -------
+        HI_lum : astropy.units.quantity.Quantity
+            HI emission in (erg s**-1) for a bunch of particles.
+        """
+        
+        luminosity = (self.mass)*(1-self.HII)*ct.LHI
+        self.HI_lum = luminosity.to("erg s**-1")
+            
+    def get_luminosityHalpha(self, mode):
         """
         Calculate the H-alpha emission for each particle in (erg s**-1), based
         on the alphaH coefficient with different ions number density dependence.
@@ -367,7 +383,7 @@ class Emitters:
         
         self.alphaH = ct.alphaH.to("cm3/s")*(self.temp.to("K").value / 1.0e4)**-0.845
 
-    def get_vect_lines(self, n_ch):
+    def get_vect_lines(self, n_ch, obs_type):
         """
         Array the velocity in Z axis as the line center, the velocity dispersion
         as the line broadening and the H-alpha emission as the line flux, each one
@@ -404,7 +420,10 @@ class Emitters:
         
         line_center = np.transpose(np.tile(self.vz, (n_ch, 1)))
         line_sigma = np.transpose(np.tile(self.dispersion, (n_ch, 1)))
-        line_flux = np.transpose(np.tile(self.Halpha_lum, (n_ch, 1)))
+        if obs_type == "HI":
+            line_flux = np.transpose(np.tile(self.HI_lum, (n_ch, 1)))
+        else:
+            line_flux = np.transpose(np.tile(self.Halpha_lum, (n_ch, 1)))
         return line_center, line_sigma, line_flux
 
     def get_vect_channels(self, channels, width, n_ch):
