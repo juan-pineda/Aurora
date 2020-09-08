@@ -269,8 +269,8 @@ class Emitters:
         """
         
         mu = np.ones(len(temp))
-        mu[np.where(temp >= 1e4*unit.K)[0]] = 0.63
-        mu[np.where(temp < 1e4*unit.K)[0]] = 1.22
+        mu[np.where(temp >= 1e4*unit.K)[0]] = 0.59
+        mu[np.where(temp < 1e4*unit.K)[0]] = 1.33
         return mu
     
     def get_fraction_ionized_H(self, temp):
