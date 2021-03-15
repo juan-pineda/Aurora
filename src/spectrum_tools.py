@@ -1,3 +1,14 @@
+"""
+==============
+spectrum_tools
+==============
+
+This module contains the methods that generate the emission 
+lines, using the emitter module, construct the data cube by 
+projecting the emission lines, and those that apply spatial 
+and spectral convolution.
+"""
+
 import os
 import sys
 import math
@@ -172,7 +183,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         em.get_luminosityHI()
     else:
         em.get_luminosityHalpha(spectrom.lum_dens_rel)
-    em.density_cut(spectrom.density_threshold, spectrom.equivalent_luminosity)
+    em.apply_density_cut(spectrom.density_threshold, spectrom.equivalent_luminosity)
     em.get_vel_dispersion()
 
     x, y, index = spectrom.position_in_pixels(em.x,em.y)

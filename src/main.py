@@ -1,14 +1,11 @@
 """
-Main aurora module
-=====================
-.......................................................................
+====
+main
+====
 The functions in this module allow the post-processing of
 hydrodynamical simulations to create mock H-alpha observations using
 the whole physical and geometrical information of the particles in the
 simulation.
-
-Examples::
-    ------ to be added ------
 """
 
 import gc

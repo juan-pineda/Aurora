@@ -164,6 +164,39 @@ class Emitters:
             Halpha_lum = luminosity * (self.dens_ion.value)**0.5 * unit.cm**-6
         self.Halpha_lum = Halpha_lum.to("erg s**-1")
 
+    def get_luminosityHalpha_cut(self, mode, mask):
+        """
+        Recalculate the H-alpha emission for particles in (erg s**-1), with over 
+        density, based on the alphaH coefficient with different ions number 
+        density dependence.
+        
+        Parameters
+        ----------
+        mode : str
+            Stablish the ions density dependence for H-alpha 
+            emission calculation. Can be 'square', 'linear'
+            or 'root'.
+        mask : ndarray (1D)
+            Mask to recalculate the new luminosity of particles
+            with over density 
+        
+        Returns
+        -------
+        Halpha_lum : astropy.units.quantity.Quantity
+            H-alpha emission in (erg s**-1) for a bunch of particles.
+        """
+        
+        self.get_alphaH()
+        luminosity = (self.smooth[mask])**3 * (ct.h*ct.c/ct.Halpha0) * self.alphaH[mask]
+        if mode == "square":
+            Halpha_lum = luminosity * (self.dens_ion[mask])**2
+        elif mode == "linear":
+            Halpha_lum = luminosity * (self.dens_ion[mask].value) * unit.cm**-6
+        elif mode == "root":
+            Halpha_lum = luminosity * (self.dens_ion[mask].value)**0.5 * unit.cm**-6
+        Halpha_lum = Halpha_lum.to("erg s**-1")
+        return Halpha_lum
+
     def density_cut(self, density_threshold = "Not", equivalent_luminosity = "min"):
         """
         Replaces the H-alpha emission for an equivalent luminosity, for certain
@@ -191,6 +224,7 @@ class Emitters:
             print("Nothing to cut")
         elif density_threshold == "polytrope":
             print("polytropic cut to be implemented")
+            print("Replacing luminosity by: ", equivalent_luminosity, ' in 6.77e-23 g cm**-3')
             logdens = np.log10(self.dens.to("6.77e-23 g cm**-3").value)
             logtemp = np.log10(self.temp.to("K").value)
             tokill = ((logdens > logtemp - 3.5) & (logdens > 0.7))
@@ -201,11 +235,80 @@ class Emitters:
         else:
             thresh = 10**np.float(density_threshold)
             print("Cutting a threshold: ",thresh)
+            print("Replacing luminosity by: ", equivalent_luminosity, ' in 6.77e-23 g cm**-3')
             tokill = (self.dens.to("6.77e-23 g cm**-3").value > thresh)
             if equivalent_luminosity == "min":
                 self.Halpha_lum[tokill] = np.min(self.Halpha_lum)
             else:
                 self.Halpha_lum[tokill] = np.float(equivalent_luminosity) * unit.erg * unit.s**-1
+
+    def density_cut_model(self, density_threshold = "Not", equivalent_luminosity = "min"):
+        """
+        Replaces the H-alpha emission for an equivalent model luminosity, for certain
+        gas particles that exceed the established density threshold.
+        
+        Parameters
+        ----------
+        density_threshold : str or float, optional
+            For 'polytrope' the density cut function will apply a threshold
+            for the density of particles based on the polytrope equation.
+            For a float value, the density threshold will be calculated using
+            the float input as a power of ten and (6.77e-23 g cm**-3) as units.
+        equivalent_luminosity : str or float, optional
+            Recalculate the luminosity with the given model (linear or root).  
+            
+        Returns
+        -------
+        Halpha_lum : astropy.units.quantity.Quantity
+            H-alpha emission in (erg s**-1) for a bunch of particles.
+        """
+        
+        if density_threshold == "Not":
+            print("Nothing to cut")
+        elif density_threshold == "polytrope":
+            print("polytropic cut to be implemented")
+            print("Cutting with model: ", equivalent_luminosity)
+            logdens = np.log10(self.dens.to("6.77e-23 g cm**-3").value)
+            logtemp = np.log10(self.temp.to("K").value)
+            tokill = ((logdens > logtemp - 3.5) & (logdens > 0.7))
+            self.Halpha_lum[tokill] = self.get_luminosityHalpha_cut(equivalent_luminosity, tokill)
+        else:
+            thresh = 10**np.float(density_threshold)
+            print("Cutting a threshold: ",thresh)
+            print("Cutting with model: ", equivalent_luminosity)
+            tokill = (self.dens.to("6.77e-23 g cm**-3").value > thresh)
+            self.Halpha_lum[tokill] = self.get_luminosityHalpha_cut(equivalent_luminosity, tokill)  
+
+    def apply_density_cut(self, density_threshold = "Not", equivalent_luminosity = "min"):
+        """
+        Replaces the H-alpha emission for an equivalent luminosity, for certain
+        gas particles that exceed the established density threshold.
+        
+        Parameters
+        ----------
+        density_threshold : str or float, optional
+            For 'polytrope' the density cut function will apply a threshold
+            for the density of particles based on the polytrope equation.
+            For a float value, the density threshold will be calculated using
+            the float input as a power of ten and (6.77e-23 g cm**-3) as units.
+        equivalent_luminosity : str or float, optional
+            For 'min' the equivalent luminosity will be set as the minimun value
+            of the H-alpha emission. For a float value, the equivalent
+            luminosity will be set as the float input in (erg s**-1).
+	    For a 'linear' or 'root', recalculate the luminosity with the given
+            model.
+            
+        Returns
+        -------
+        Halpha_lum : astropy.units.quantity.Quantity
+            H-alpha emission in (erg s**-1) for a bunch of particles.
+        """
+        
+        if equivalent_luminosity == "linear" or equivalent_luminosity == "root":
+            self.density_cut_model(density_threshold, equivalent_luminosity)
+        
+        else:
+            self.density_cut(density_threshold, equivalent_luminosity)
 
     def get_vel_dispersion(self):
         """

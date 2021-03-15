@@ -3,9 +3,9 @@
 snapshot_tools
 ==============
 
-Methods that prepare the snapshot to build the synthetic cube.
+This module contains the methods that prepare the snapshot to 
+build the synthetic cube.
 """
-
 
 import gc
 import sys

@@ -1,3 +1,12 @@
+"""
+================
+array_operations
+================
+
+This module contains two methods for degrading the resolution of
+realistic datacube.
+"""
+
 import sys
 import logging
 import numpy as np

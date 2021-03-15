@@ -1,3 +1,12 @@
+"""
+========
+datacube
+========
+
+This module contains the methods for constructing kinematic maps from a 
+realistic datacube.
+"""
+
 import os
 import re
 import sys
@@ -20,7 +29,7 @@ from pylab import *
 class DatacubeObj():
     """
     This class handles the relevant information and operations related
-    to the datacubes
+    to the datacubes.
     """
 
     def __init__(self):
@@ -175,9 +184,25 @@ class DatacubeObj():
         spectrom.channel_ref = int(spectrom.spectral_dim/2)
 
     def intensity_map(self):
+        """
+        Generates the fluxmap from the realistic datacube (3D). 
+                
+        Returns
+        -------
+        fluxmap : ndarray (2D)
+            Fluxmap in erg s-1.
+        """
         self.fluxmap = self.cube.sum(axis=0) * self.velocity_sampl.to("km s-1").value
 
     def velocity_map(self):
+        """
+        Generates the velocity map from the realistic datacube (3D). 
+                
+        Returns
+        -------
+        velmap : ndarray (2D)
+            Velocity map in km s-1.
+        """
         if not hasattr(self,"fluxmap"):
             self.intensity_map()
         velmap = np.zeros(self.fluxmap.shape)
@@ -188,6 +213,14 @@ class DatacubeObj():
         self.velmap = velmap / self.fluxmap
 
     def dispersion_map(self):
+        """
+        Generates the velocity dispersion map from the realistic datacube (3D). 
+                
+        Returns
+        -------
+        dispmap : ndarray (2D)
+            Velocity dispersion map in km s-1.
+        """
         if not hasattr(self,"fluxmap"):
             self.intensity_map()
         if not hasattr(self,"velmap"):
@@ -198,6 +231,18 @@ class DatacubeObj():
         self.dispmap = np.sqrt(disper * self.velocity_sampl.to("km s-1").value / self.fluxmap)
 
     def all_maps(self):
+        """
+        Generates the kinematic maps. from the realistic datacube (3D). 
+                
+        Returns
+        -------
+        fluxmap : ndarray (2D)
+            Fluxmap in erg s-1.
+        velmap : ndarray (2D)
+            Velocity map in km s-1.
+        dispmap : ndarray (2D)
+            Velocity dispersion map in km s-1.
+        """
         self.intensity_map()
         self.velocity_map()
         self.dispersion_map()
@@ -218,9 +263,3 @@ class DatacubeObj():
         self.fluxmap[zeros] = np.nan
         self.velmap[zeros] = np.nan
         self.dispmap[zeros] = np.nan
-
-
-
-
-
-
