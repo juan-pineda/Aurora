@@ -3,9 +3,9 @@
 main
 ====
 The functions in this module allow the post-processing of
-hydrodynamical simulations to create mock H-alpha observations using
-the whole physical and geometrical information of the particles in the
-simulation.
+hydrodynamical simulations to create mock H-alpha or HI 
+observations using the whole physical and geometrical 
+information of the particles in the simulation.
 """
 
 import gc
@@ -65,7 +65,7 @@ def __aurora_version():
 
 def spectrom_mock(ConfigFile):
     """
-    Map the estimated H-alpha flux from the simulation to a mock data
+    Map the estimated H-alpha or HI flux from the simulation to a mock data
     cube and stores the output in fits format.
 
     Parameters

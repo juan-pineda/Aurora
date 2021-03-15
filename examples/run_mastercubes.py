@@ -1,4 +1,4 @@
-from aurora import aurora as au
+from src import main as au
 from sys import argv
 
 if __name__ == '__main__':
