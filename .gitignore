@@ -101,8 +101,8 @@ ENV/
 .mypy_cache/
 
 # HDF5 AND OTHER BIG FILES
-*.hdf5
-*.fits
+#*.hdf5
+#*.fits
 .vscode/
 
 *.swp
