@@ -7,6 +7,31 @@ Download the code by cloning the git repository using
 $ git clone https://github.com/juan-pineda/Aurora.git
 ```
 
+After downloading the code, you need to add the repository location address to the python path:
+
+```
+$ nano ~/.bashrc
+```
+
+Add to end of bashrc:
+
+```
+#aurora path 
+export PYTHONPATH=${PYTHONPATH}:/home/user_name/dir/Aurora/
+```
+
+Update shell:
+
+```
+$ source ~/.bashrc
+```
+
+Then you can import Aurora as a usual library in Python:
+
+```python
+import aurora
+```
+
 ## Documentation
 
 The documentation will be available in `/documentation` and in the Wiki of this repository.
