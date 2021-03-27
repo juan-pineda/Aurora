@@ -1,5 +1,4 @@
-#from .. import src/*
-from ..src import datacube as dc
+from aurora import datacube as dc
 import numpy as np
 import matplotlib.pyplot as plt
 
