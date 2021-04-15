@@ -512,7 +512,7 @@ class SpectromObj():
         velocity_range : astropy.units.core.Unit
             Spectral range of the instrument in velocity units
             (km s-1).
-        calculate_vel_range : bool
+        calculate_velrange : bool
             Allows to calculate the appropriate velocity range (km s-1)
             based on the velocity dispersion, the line-of-sight velocity
             and the psf sigma.
