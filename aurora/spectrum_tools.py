@@ -189,7 +189,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
     x, y, index = spectrom.position_in_pixels(em.x,em.y)
 
     # scale to which each particle belongs according to its smoothing lenght
-    scale = np.digitize(em.smooth.to("kpc"), 1.1 * run.fft_hsml_limits.to("kpc"))
+    scale = np.digitize(em.smooth.to("kpc").value, 1.1 * run.fft_hsml_limits.to("kpc").value)
 
     line_center, line_sigma, line_flux = em.get_vect_lines(n_ch, spectrom.obs_type)
     channel_center, channel_width = em.get_vect_channels(spectrom.vel_channels, spectrom.velocity_sampl, n_ch)
