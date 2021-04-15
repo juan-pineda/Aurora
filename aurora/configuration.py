@@ -52,6 +52,8 @@ from astropy.cosmology import z_at_value
 from . import presets
 from . import constants as ct
 from . import set_output as so
+from . import emitters as emit
+from . import snapshot_tools as snap
 
 # This variable stores the names of the parameters that were not passed
 missing_params = []
@@ -510,6 +512,10 @@ class SpectromObj():
         velocity_range : astropy.units.core.Unit
             Spectral range of the instrument in velocity units
             (km s-1).
+        calculate_vel_range : bool
+            Allows to calculate the appropriate velocity range (km s-1)
+            based on the velocity dispersion, the line-of-sight velocity
+            and the psf sigma.
         spectral_range : astropy.units.core.Unit
             Spectral range of the instrument in (angstrom).
         spatial_res_kpc : astropy.units.core.Unit
@@ -584,6 +590,8 @@ class SpectromObj():
             spec_conf, "spectrom", "FoV_arsec", float, unit.arcsec)
         self.velocity_range = read_var(
             spec_conf, "spectrom", "velocity_range", float, unit.km/unit.s)
+        self.calculate_velrange = read_var(
+            spec_conf, "spectrom", "calculate_velrange", bool)
         self.spectral_range = read_var(
             spec_conf, "spectrom", "spectral_range", float, unit.angstrom)
         self.spatial_res_kpc = read_var(
@@ -695,7 +703,7 @@ class SpectromObj():
         self.spatial_dim = self.spatial_dim / self.oversampling
         self.spatial_sampl = self.spatial_sampl * self.oversampling
 
-    def check_params(self, geom):
+    def check_params(self, geom, run):
         """
         Check the self-consistency of related parameters such
         as pixsize and spatial_sampl, and adjust them as
@@ -707,7 +715,7 @@ class SpectromObj():
         self.check_spatial_res_kpc(geom)
         self.check_fieldofview(geom)
         self.check_velocity_sampl(geom)
-        self.check_velocity_range(geom)
+        self.check_velocity_range(geom, run)
 
     def check_pixsize(self, geom):
         """
@@ -799,9 +807,10 @@ class SpectromObj():
                 self.velocity_sampl = geom.wavelength_to_vel(
                     self.spectral_sampl)
 
-    def check_velocity_range(self, geom):
+    def check_velocity_range(self, geom, run):
         """
-        Force consistency between velocity_range, spectral_range, and
+        Calculate the appropriate velocity_range if desired by user and
+        force consistency between velocity_range, spectral_range, and
         spectral_dim, possibly superseding their input values.
         
         Returns
@@ -815,6 +824,26 @@ class SpectromObj():
             Number of spectral channels of the instrument.
         """
 
+        if self.calculate_velrange == True:
+            data = snap.read_snap(run.input_file)
+            data_gas = snap.set_snapshots_ready(geom, run, data)[0]
+            em = emit.Emitters(data_gas, self.redshift_ref)
+            em.get_state()
+            em.get_vel_dispersion()
+
+            psf_fwhm = ct.c/self.spectral_res
+            psf_sigma = psf_fwhm / ct.fwhm_sigma
+            line_sigma = np.sqrt(em.dispersion**2+psf_sigma**2)
+    
+            Vrange = 2*(np.abs(em.vz) + 4*line_sigma)
+            self.velocity_range = Vrange.to('km/s').value.max()*unit.km/unit.s
+            del data
+            del data_gas
+            del em
+            del psf_fwhm
+            del psf_sigma
+            del line_sigma
+        
         if ~np.isnan(self.velocity_range):
             self.spectral_dim = int(self.velocity_range.to("km s-1").value / (
                 self.velocity_sampl.to("km s-1").value))
@@ -957,7 +986,7 @@ def get_allinput(ConfigFile):
     # > Adjust the parameters for self-consistency
     # > Defines the velocity/wavelength channels of the cube
     geom.check_redshift(spectrom)
-    spectrom.check_params(geom)
+    spectrom.check_params(geom, run)
     spectrom.set_channels(geom)
     spectrom.set_reference()
 
