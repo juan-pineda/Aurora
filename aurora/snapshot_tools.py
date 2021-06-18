@@ -17,6 +17,7 @@ from astropy import units as unit
 
 from . import constants as ct
 
+
 def read_snap(input_file):
     """
     Reads the simulation snapshot file.
@@ -107,12 +108,14 @@ def set_hsml_limits(run, data_gas):
         if(len(data_gas) > 0):
             smooth = np.unique(data_gas["smooth"])
             n_smooth = len(smooth)
-            if((n_smooth > 1) & (n_smooth < 20)):
+            if((n_smooth >= 1) & (n_smooth < 20)):
                 run.fft_hsml_limits = smooth.in_units("kpc")*unit.kpc
                 run.nfft = n_smooth
             else:
-                run.fft_hsml_limits = np.arange(1.0, run.nfft + 1)
-                run.fft_hsml_limits = run.fft_hsml_limits * run.fft_hsml_min.to("kpc") * unit.kpc
+                logging.error(f"Excessively large number of scales in the simulation particles.")
+                logging.error(f"It is first recommended to use the GADGET-BINS coupling module")
+                logging.error(f"to reduce the convolution scales.")
+                sys.exit()
         else:
             logging.error(f"No gas elements in this snapshot")
             sys.exit()
