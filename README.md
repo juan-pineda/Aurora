@@ -80,6 +80,7 @@ Juan Carlos Basto Pineda - jcbastop@correo.uis.edu.co
 * Rolando Carvajal  [@rolando980709](https://github.com/rolando980709)
 * Juan Manuel Pacheco [@JuanManuelPacheco](https://github.com/JuanManuelPacheco)
 * Diego Rueda  [@druedaplata](https://github.com/druedaplata)
+* Jorge Jaimes [@jhosgun](https://github.com/jhosgun)
 
 ## License
  Pykinemetry is provided under "UIS" lincense.
