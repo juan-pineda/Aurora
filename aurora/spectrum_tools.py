@@ -178,7 +178,7 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
 
     # This object allows to calculate the HI or Halpha flux, and line broadening
     em = emit.Emitters(data_gas[start:stop], spectrom.redshift_ref)
-    em.get_state()
+    em.get_state(spectrom)
     if spectrom.obs_type == "HI":
         em.get_luminosityHI()
     else:

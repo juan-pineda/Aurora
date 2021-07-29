@@ -65,7 +65,7 @@ class Emitters:
         self.smooth = np.array(data_gas["smooth"].in_units("kpc"))*unit.kpc
         self.u = np.array(data_gas["u"].in_units("cm**2 s**-2"))*unit.cm**2/unit.s**2
 
-    def get_state(self):
+    def get_state(self,spectrom):
         """
         Calculate the temperature, the fraction of ionized hydrogen, the average
         molecular weight and the ions number density of a bunch of particles using
@@ -92,8 +92,16 @@ class Emitters:
         #   naive approximation of the HII coefficient setting it to zero for particles
         #   under 10e4 (K) and setting it to one for particles above that temperature.
         # > Use the fraction of ionized hydrogen to calculate mu, dens_ion and temp.
+
+        if spectrom.use_ionized_hydrogen == False:
+            self.get_all_params()
+            if self.redshift != 0.:
+                self.get_Rahmati_HII()
+                self.get_dens_ion()
+            else:
+                pass
         
-        if "HII" in self.data.keys():
+        elif "HII" in self.data.keys():
             self.get_HII()
             self.get_mu()
             self.get_dens_ion()
@@ -114,6 +122,7 @@ class Emitters:
                 self.get_dens_ion()
             else:
                 pass
+
         else:
             self.get_all_params()
             if self.redshift != 0.:

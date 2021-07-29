@@ -65,7 +65,8 @@ default_values["spectrom"] = {
     "kernel_scale": [1.],
     "lum_dens_relation": ["square"],
     "density_threshold": ["Not"],
-    "equivalent_luminosity": ["min"]
+    "equivalent_luminosity": ["min"],
+    "use_ionized_hydrogen": ["True"]
 }
 
 Instruments = {}

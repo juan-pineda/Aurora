@@ -539,7 +539,11 @@ class SpectromObj():
         equivalent_luminosity : str
             Equivalent luminosity that replace the H-alpha emission
             for certain gas particles that exceed the established
-            density threshold. See more info in emitters.py. 
+            density threshold. See more info in emitters.py.
+        use_ionized_hydrogen : bool
+            Determines whether or not to use the ionized hydrogen
+            information stored in the simulated particles for luminosity
+            calculations.
         """
 
         spec_conf = configparser.SafeConfigParser(allow_no_value=True)
@@ -606,6 +610,8 @@ class SpectromObj():
             spec_conf, "spectrom", "density_threshold", str)
         self.equivalent_luminosity = read_var(
             spec_conf, "spectrom", "equivalent_luminosity", str)
+        self.use_ionized_hydrogen = read_var(
+            spec_conf, "spectrom", "use_ionized_hydrogen", bool)
 
     def cube_dims(self):
         """
