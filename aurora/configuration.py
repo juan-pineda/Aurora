@@ -709,7 +709,7 @@ class SpectromObj():
         self.spatial_dim = self.spatial_dim / self.oversampling
         self.spatial_sampl = self.spatial_sampl * self.oversampling
 
-    def check_params(self, geom, run):
+    def check_params(self, geom, run, spectrom):
         """
         Check the self-consistency of related parameters such
         as pixsize and spatial_sampl, and adjust them as
@@ -721,7 +721,7 @@ class SpectromObj():
         self.check_spatial_res_kpc(geom)
         self.check_fieldofview(geom)
         self.check_velocity_sampl(geom)
-        self.check_velocity_range(geom, run)
+        self.check_velocity_range(geom, run, spectrom)
 
     def check_pixsize(self, geom):
         """
@@ -813,7 +813,7 @@ class SpectromObj():
                 self.velocity_sampl = geom.wavelength_to_vel(
                     self.spectral_sampl)
 
-    def check_velocity_range(self, geom, run):
+    def check_velocity_range(self, geom, run, spectrom):
         """
         Calculate the appropriate velocity_range if desired by user and
         force consistency between velocity_range, spectral_range, and
@@ -834,7 +834,7 @@ class SpectromObj():
             data = snap.read_snap(run.input_file)
             data_gas = snap.set_snapshots_ready(geom, run, data)[0]
             em = emit.Emitters(data_gas, self.redshift_ref)
-            em.get_state()
+            em.get_state(spectrom)
             em.get_vel_dispersion()
 
             psf_fwhm = ct.c/self.spectral_res
@@ -859,10 +859,10 @@ class SpectromObj():
             if ~np.isnan(self.spectral_range):
                 self.velocity_range = geom.wavelength_to_vel(
                     self.spectral_range)
-                self.check_velocity_range(geom)
+                self.check_velocity_range(geom,run,spectrom)
             elif ~np.isnan(self.spectral_dim):
                 self.velocity_range = self.spectral_dim * self.velocity_sampl
-                self.check_velocity_range(geom)
+                self.check_velocity_range(geom,run,spectrom)
 
     def set_channels(self, geom):
         """
@@ -992,7 +992,7 @@ def get_allinput(ConfigFile):
     # > Adjust the parameters for self-consistency
     # > Defines the velocity/wavelength channels of the cube
     geom.check_redshift(spectrom)
-    spectrom.check_params(geom, run)
+    spectrom.check_params(geom, run, spectrom)
     spectrom.set_channels(geom)
     spectrom.set_reference()
 
