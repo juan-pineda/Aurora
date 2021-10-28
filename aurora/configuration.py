@@ -844,8 +844,9 @@ class SpectromObj():
             Vrange = 2*(np.abs(em.vz) + 4*line_sigma)
 
             total_particles=0
-	    particles = np.histogram(Vrange.to('km/s').value, bins = 100)[0]
+            particles = np.histogram(Vrange.to('km/s').value, bins = 100)[0]
             vel = np.histogram(Vrange.to('km/s').value, bins = 100)[1]
+            
             for i in range(len(particles)):
                 total_particles+=particles[i]
                 if total_particles >= len(data_gas)*0.99:
