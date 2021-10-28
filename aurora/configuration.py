@@ -842,7 +842,16 @@ class SpectromObj():
             line_sigma = np.sqrt(em.dispersion**2+psf_sigma**2)
     
             Vrange = 2*(np.abs(em.vz) + 4*line_sigma)
-            self.velocity_range = Vrange.to('km/s').value.max()*unit.km/unit.s
+
+            total_particles=0
+	    particles = np.histogram(Vrange.to('km/s').value, bins = 100)[0]
+            vel = np.histogram(Vrange.to('km/s').value, bins = 100)[1]
+            for i in range(len(particles)):
+                total_particles+=particles[i]
+                if total_particles >= len(data_gas)*0.99:
+                    break
+
+            self.velocity_range = vel[i]*unit.km/unit.s
             del data
             del data_gas
             del em
