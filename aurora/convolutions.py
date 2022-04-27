@@ -415,7 +415,7 @@ def spectral_convolution_astropy_fft(cube, lsf):
                                                    fft_pad = True, allow_huge=True)
     return cube
 
-def spectral_convolution_astropy_fft(cube, lsf):
+def spectral_convolution_aurora_fft(cube, lsf):
     """
     Convolve the cube with the LSF using fft. To apply fft, a padding with
     zeros is first made in the cube and LSF arrays, depending on the 
