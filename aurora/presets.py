@@ -52,8 +52,11 @@ default_values["run"] = {
     "reference_id": [""],
     "overwrite": [False],
     "ncpu": [1],
+    "ncpu_convolution": [1],
+    "convolution_parallel_methot": [1],
     "spectral_convolution": ["analytical"],
-    "spatial_convolution": ["spatial_astropy"]
+    "spatial_convolution": ["spatial_astropy"],
+    "HSIM3" : ["False"]
 }
 
 default_values["spectrom"] = {

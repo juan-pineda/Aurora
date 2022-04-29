@@ -18,6 +18,8 @@ import numpy as np
 from tqdm import tqdm
 import astropy.convolution
 
+import signal
+import multiprocessing as mp
 from joblib import Parallel, delayed
 
 from . import constants as ct
@@ -217,7 +219,12 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         line_sigma) * line_flux
 
     # Divide by the effective channel width
-    flux_in_channels = (flux_in_channels.to("erg s^-1").value
+    if run.HSIM3 == True:
+        flux_in_channels = (flux_in_channels.to("erg s^-1").value
+        /spectrom.spectral_sampl.to("um").value/(4*np.pi*geom.dl.to("cm").value**2)
+        /spectrom.spatial_sampl.to("arcsec").value**2)
+    else:
+        flux_in_channels = (flux_in_channels.to("erg s^-1").value
         /spectrom.velocity_sampl.to("km s^-1").value/(4*np.pi*geom.dl.to("cm").value**2))
 
     # Compute the fluxes scale by scale
@@ -253,7 +260,7 @@ def __cube_spatial_convolution(run, spectrom, cube):
 
     Parameters
     ----------
-    run : aurora.configuration.RunObj
+    run : aurora.configuration.RunObj 
         Instance of class RunObj whose attributes make code computational
         performance properties available. See definitions in
         configuration.py.
@@ -284,6 +291,116 @@ def __cube_spatial_convolution(run, spectrom, cube):
         psf = cv.create_psf(spectrom, scale_sigma)
         # Spatial convolution
         cube[:, :, :, i] = cv.mode_spatial_convolution(cube[:, :, :, i], psf, run.spatial_convolution)
+
+def __cube_spatial_convolution_in_parallel_1(run, spectrom, cube):
+    """
+    """
+    cube_side, n_ch = spectrom.cube_dims()
+    cube_size = np.zeros((n_ch, cube_side, cube_side, run.nfft)).nbytes
+    memory_needed_ncores = int((cube_size/1e6) * min(run.ncpu_convolution, run.nfft))
+    memory_available = int(os.popen("free -m").readlines()[1].split()[-1])
+
+    num_cores = int(run.ncpu_convolution)
+    if memory_available > memory_needed_ncores:
+        print('Start parallel convolution in for the different spatial scale')
+        cube_list = Parallel(n_jobs=num_cores)(delayed(__cube_scale_spatial_convolution)
+                                               (run, spectrom, cube, i) for i in range(run.nfft))
+        #print(type(cube_list), len(cube_list), cube_list[0].shape,run.nfft)
+        return sum(cube_list)
+    else:
+        print('Not enough RAM left in your device for this operation in parallel')
+        logging.warning(f"Not enough RAM left in your device for this operation in parallel.")
+        logging.info(f"Needed {memory_needed_ncores}Mb, you have {memory_available}Mb Free.")
+        logging.info(f"Using a single cpu mode...")
+        #break
+#return get_cube_in_sequential(geom, run, spectrom, data_gas, nchunk)    
+
+def __cube_spatial_convolution_in_parallel_2(run, spectrom, cube):
+    """
+    """
+    cube_side, n_ch = spectrom.cube_dims()
+    cube_size = np.zeros((n_ch, cube_side, cube_side, run.nfft)).nbytes
+    memory_needed_ncores = int((cube_size/1e6) * min(run.ncpu_convolution, run.nfft))
+    memory_available = int(os.popen("free -m").readlines()[1].split()[-1])
+
+    num_cores = int(run.ncpu_convolution)
+    if memory_available > memory_needed_ncores:
+        print('Start parallel convolution in for the different spatial scale')
+        def init_worker():
+	        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+        pool = mp.Pool(num_cores, init_worker)
+		
+		
+        for j in range(run.nfft):
+                result = []
+                result.append(pool.apply_async(__cube_scale_spatial_convolution, args=(run, spectrom, cube, i)))		
+       # try:
+      #          while True:
+     #                   time.sleep(0.5)
+    #                    if all([r.ready() for r in result]):
+   #                             break
+  #      except KeyboardInterrupt:
+ #               pool.terminate()
+#                pool.join()
+        pool.close()
+        pool.join() 
+        print(type(result), len(result), result[0].shape, run.nfft)
+        return sum(result)
+    else:
+        print('Not enough RAM left in your device for this operation in parallel')
+        logging.warning(f"Not enough RAM left in your device for this operation in parallel.")
+        logging.info(f"Needed {memory_needed_ncores}Mb, you have {memory_available}Mb Free.")
+        logging.info(f"Using a single cpu mode...")
+
+def __cube_scale_spatial_convolution(run, spectrom, cube, scale_index):
+    """
+    Perform the spatial smoothing of fluxes for a given spatial scale of the
+    simulations in the cube.
+    
+    Notes
+    -----
+    Consider two kernels: the multi-scale kernels of the simulation and
+    the spatial PSF if spectrom.spatial_res was defined. 
+
+    Parameters
+    ----------
+    run : aurora.configuration.RunObj
+        Instance of class RunObj whose attributes make code computational
+        performance properties available. See definitions in
+        configuration.py.
+    spectrom : aurora.configuration.SpectromObj
+        Instance of class SpectromObj whose attributes make instrumental
+        properties available. See definitions in configuration.py.
+    cube : ndarray (4D)                  
+        Contains the fluxes at each pixel and velocity channel 
+        produced by the gas particles with a given smoothing
+        lengths separately.
+    scale_index : integer                   
+        Index of the spatial scale to perform the convolution.
+    """
+    
+    # Code flow:
+    # ==========
+    # > Create the kernel smoothing.
+    # > Adds the effect of spatial resolution in the kernel.
+    # > Apply the spatial convolution method for a given 
+    # scale as configured in spectrum.spatial_convolution
+    cube_side, n_ch = spectrom.cube_dims()
+    logging.info(f"Preparing for spatial smoothing, kernel = {round(run.fft_hsml_limits[scale_index].value*1000, 1)} pc")
+    sys.stdout.flush()
+    # Kernel smoothing
+    scale_fwhm = (run.fft_hsml_limits[scale_index] / spectrom.pixsize).decompose().value
+    scale_sigma = spectrom.kernel_scale * scale_fwhm / ct.fwhm_sigma
+    logging.info(f"Size of the kernel in pixels = {round(scale_sigma, 1)}")  
+    # Enlarge the kernel adding the effect of the PSF
+    psf = cv.create_psf(spectrom, scale_sigma)
+    # Spatial convolution
+#    cube[:, :, :, scale_index] = cv.mode_spatial_convolution(cube[:, :, :, scale_index], psf, run.spatial_convolution)
+    print('Scale: ', run.nfft-scale_index-1)
+    cube_convolve = cv.mode_spatial_convolution(cube[:, :, :, run.nfft-scale_index-1].copy(), psf, run.spatial_convolution)
+    return cube_convolve
+
 
 def __cube_spectral_convolution(run, spectrom, cube, mode = 'analytical'):
     """

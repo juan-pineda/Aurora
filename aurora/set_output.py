@@ -191,6 +191,83 @@ def writing_datacube(geom, spectrom, run, dataset):
     hdulist.close()
 
 
+def writing_datacube_HSIM3(geom, spectrom, run, dataset):
+    """
+    Create and write the output file in FITS format of the cube processed.
+    Write the main information of the realistic mock observation (stored 
+    in *geom*, *spectrom *and *run*) in the file header.
+    
+    Parameters
+    ----------
+    geom : aurora.configuration.GeometryObj
+        Instance of class GeometryObj whose attributes make geometric 
+        properties available. See definitions in configuration.py.
+    run : aurora.configuration.RunObj
+        Instance of class RunObj whose attributes make code computational
+        performance properties available. See definitions in
+        configuration.py.
+    spectrom : aurora.configuration.SpectromObj
+        Instance of class SpectromObj whose attributes make instrumental
+        properties available. See definitions in configuration.py.
+    dataset : ndarray (3D)
+        Processed cube. Contains the fluxes at each pixel and velocity 
+        channel produced by the gas particles.
+    """
+    
+    # Code clow
+    # =====================
+    # > Create the FITS file with the processed cube
+    # > Write main information in FITS file header
+    # > Save the final FITS file in the dir and with the supplied name
+    dl = round(geom.lambda_obs.to('AA').value / spectrom.spectral_res, 2)
+    hdu = fits.PrimaryHDU(dataset)
+    hdulist = fits.HDUList([hdu])
+    prihdr = hdu.header
+    prihdr["NAXIS"] = 3
+    prihdr["NAXIS1"] = spectrom.spatial_dim
+    prihdr["NAXIS2"] = spectrom.spatial_dim
+    prihdr["NAXIS3"] = spectrom.spectral_dim
+    prihdr["CTYPE1"] = "x"
+    prihdr["CTYPE2"] = "y"
+    prihdr["CTYPE3"] = "wavelength"
+    prihdr["CDELT1"] = spectrom.spatial_sampl.to("arcsec").value
+    prihdr["CDELT2"] = spectrom.spatial_sampl.to("arcsec").value
+    prihdr["CDELT3"] = spectrom.spectral_sampl.to("Angstrom").value
+    prihdr["CUNIT1"] = "arcsec"
+    prihdr["CUNIT2"] = "arcsec"
+    prihdr["CUNIT3"] = "Angstrom"
+    prihdr["SPECRES"] = (dl, "Spectral resolution")
+    prihdr["CRPIX3"] = (spectrom.channel_ref + 1,
+                        "Center of the first pixel is 1")
+    prihdr["CRPIX1"] = (spectrom.pixel_ref + 1,
+                        "Center of the first pixel is (1,1)")
+    prihdr["CRPIX2"] = (spectrom.pixel_ref + 1,
+                        "Center of the first pixel is (1,1)") #must be integer?
+    prihdr["CRVAL3"] = geom.lambda_obs.to("AA").value
+    prihdr["BUNIT"] = "erg/s/cm2/um/arcsec2"
+    prihdr["R"] = (spectrom.spectral_res, "Power spectral resolution, R") 
+    prihdr["BSCALE"] = 1.0
+    prihdr["BZERO"] = 0
+    prihdr["CD1_1"] = spectrom.pixsize.to("pc").value
+    prihdr["CD1_2"] = 0.
+    prihdr["CD2_1"] = 0.
+    prihdr["CD2_2"] = spectrom.pixsize.to("pc").value
+    prihdr["CRVAL1"] = spectrom.position_ref.to("pc").value
+    prihdr["CRVAL2"] = spectrom.position_ref.to("pc").value
+    prihdr["SIMULAT"] = (run.simulation_id, "Parent Simulation")
+    prihdr["SNAPSHOT"] = run.snapshot_id
+    prihdr["SNAP_REF"] = (run.reference_id, "Reference frame for geom. transf.")
+    prihdr["THETA"] = (geom.theta.value, "Inclination angle in DEG")
+    prihdr["PHI"] = (geom.phi.value, "Position angle in DEG")
+    prihdr["Z_REF"] = (spectrom.redshift_ref,
+                       "Redshift used to model HII fraction")
+    prihdr["SPATRES"] = (spectrom.spatial_res.to(
+        "arcsec").value, "Spatial resolution in arcsec")
+
+    hdulist.writeto(run.output_name, clobber=True)
+    hdulist.close()
+
+
 def writing_maps(cube, dataset, datatype, output_name):
     """
     Create and write the output file in FITS format of the processed map.

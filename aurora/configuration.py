@@ -171,7 +171,7 @@ class RunObj():
         spatial_convolution : str
             Keyword to store the method by which the spatial convolution
             will be performed.
-            Options:
+            Options :
             *  spatial_astropy (default): Convolution using the Astropy
                library.
             *  spatial_astorpy_fft : Convolution using Fast Fourier
@@ -181,14 +181,21 @@ class RunObj():
         spectral_convolution : str
             Keyword to store the method by which the spectral convolution
             will be performed.
-            Options:
-         *  analytical (default): Analytical convolution between the 
+            Options :
+            *  analytical (default): Analytical convolution between the 
             Gaussian emission lines and the Gaussian kernel of the LSF.
-         *  spectral_astropy : Convolution using the Astropy library.
-         *  spectral_astorpy_fft : Convolution using Fast Fourier 
+            *  spectral_astropy : Convolution using the Astropy library.
+            *  spectral_astorpy_fft : Convolution using Fast Fourier 
             transform from the Astropy library.
-         *  spectral_aurora_fft : Convolution using Fast Fourier
+            *  spectral_aurora_fft : Convolution using Fast Fourier
             transform.
+	HSIM3 : bool
+    	    Keyword to generate and store the data cube according to the
+	    HSIM3 code of HARMOPNI
+	    (see https://harmoni-elt.physics.ox.ac.uk/Hsim.html).
+	    Options :
+	    * False (default)
+	    * True 
         """
 
         run_config = configparser.SafeConfigParser({}, allow_no_value=True)
@@ -200,6 +207,8 @@ class RunObj():
         self.instrument = read_var(run_config, "run", "instrument", str)
         self.nvector = read_var(run_config, "run", "nvector", int)
         self.ncpu = read_var(run_config, "run", "ncpu", int)
+        self.ncpu_convolution = read_var(run_config, "run", "ncpu_convolution", int)
+        self.convolution_parallel_methot = read_var(run_config, "run", "convolution_parallel_methot", int)
         self.overwrite = read_var(run_config, "run", "overwrite", bool)
         self.simulation_id = read_var(run_config, "run", "simulation_id", str)
         self.snapshot_id = read_var(run_config, "run", "snapshot_id", str)
@@ -212,6 +221,8 @@ class RunObj():
                                             "spatial_convolution", str)
         self.spectral_convolution = read_var(run_config, "run", 
                                              "spectral_convolution", str)
+        self.HSIM3 = read_var(run_config, "run", 
+                                             "HSIM3", bool)
 
         
 class GeometryObj():
@@ -591,7 +602,7 @@ class SpectromObj():
         self.fieldofview = read_var(
             spec_conf, "spectrom", "fieldofview", float, unit.kpc)
         self.FoV_arcsec = read_var(
-            spec_conf, "spectrom", "FoV_arsec", float, unit.arcsec)
+            spec_conf, "spectrom", "FoV_arcsec", float, unit.arcsec)
         self.velocity_range = read_var(
             spec_conf, "spectrom", "velocity_range", float, unit.km/unit.s)
         self.calculate_velrange = read_var(

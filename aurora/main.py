@@ -100,9 +100,16 @@ def spectrom_mock(ConfigFile):
     snap.set_hsml_limits(run, data_gas)
     spectrom.oversample()
     cube = spec.__project_all_chunks(geom, run, spectrom, data_gas)
-    spec.__cube_spatial_convolution(run, spectrom, cube)
-    cube = np.sum(cube, axis=3)
+    if run.ncpu_convolution > 1:
+        if convolution_parallel_methot == 1:
+            cube = spec.__cube_spatial_convolution_in_parallel_1(run, spectrom, cube.copy())
+        if convolution_parallel_methot == 2:
+            cube = spec.__cube_spatial_convolution_in_parallel_2(run, spectrom, cube.copy())            
+    else:        
+        spec.__cube_spatial_convolution(run, spectrom, cube)
+        cube = np.sum(cube, axis=3)
     spec.__cube_spectral_convolution(run, spectrom, cube)
+    
 
     # Code flow:
     # =====================
@@ -119,7 +126,10 @@ def spectrom_mock(ConfigFile):
         cube_noise = cube + np.random.normal(0.0, spectrom.sigma_cont, cube.shape)
 
     logging.info(f"Created file {run.output_name}")
-    so.writing_datacube(geom, spectrom, run, cube)
+    if run.HSIM3 == True:
+        so.writing_datacube_HSIM3(geom, spectrom, run, cube)
+    else:        
+        so.writing_datacube(geom, spectrom, run, cube)
 
 
 def degrade_mastercube(ConfigFile):
