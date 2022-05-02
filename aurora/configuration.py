@@ -208,7 +208,7 @@ class RunObj():
         self.nvector = read_var(run_config, "run", "nvector", int)
         self.ncpu = read_var(run_config, "run", "ncpu", int)
         self.ncpu_convolution = read_var(run_config, "run", "ncpu_convolution", int)
-        self.convolution_parallel_methot = read_var(run_config, "run", "convolution_parallel_methot", int)
+        self.convolution_parallel_method = read_var(run_config, "run", "convolution_parallel_method", int)
         self.overwrite = read_var(run_config, "run", "overwrite", bool)
         self.simulation_id = read_var(run_config, "run", "simulation_id", str)
         self.snapshot_id = read_var(run_config, "run", "snapshot_id", str)

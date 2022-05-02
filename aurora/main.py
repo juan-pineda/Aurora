@@ -101,9 +101,9 @@ def spectrom_mock(ConfigFile):
     spectrom.oversample()
     cube = spec.__project_all_chunks(geom, run, spectrom, data_gas)
     if run.ncpu_convolution > 1:
-        if convolution_parallel_methot == 1:
+        if run.convolution_parallel_method == 1:
             cube = spec.__cube_spatial_convolution_in_parallel_1(run, spectrom, cube.copy())
-        if convolution_parallel_methot == 2:
+        if run.convolution_parallel_method == 2:
             cube = spec.__cube_spatial_convolution_in_parallel_2(run, spectrom, cube.copy())            
     else:        
         spec.__cube_spatial_convolution(run, spectrom, cube)

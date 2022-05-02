@@ -53,7 +53,7 @@ default_values["run"] = {
     "overwrite": [False],
     "ncpu": [1],
     "ncpu_convolution": [1],
-    "convolution_parallel_methot": [1],
+    "convolution_parallel_method": [1],
     "spectral_convolution": ["analytical"],
     "spatial_convolution": ["spatial_astropy"],
     "HSIM3" : ["False"]
