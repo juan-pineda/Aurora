@@ -12,6 +12,7 @@ and spectral convolution.
 import os
 import sys
 import math
+import time
 import logging
 import astropy
 import numpy as np
@@ -302,7 +303,7 @@ def __cube_spatial_convolution_in_parallel_1(run, spectrom, cube):
 
     num_cores = int(run.ncpu_convolution)
     if memory_available > memory_needed_ncores:
-        print('Start parallel convolution in for the different spatial scale')
+        print('Start parallel convolution in the different spatial scale')
         cube_list = Parallel(n_jobs=num_cores)(delayed(__cube_scale_spatial_convolution)
                                                (run, spectrom, cube, i) for i in range(run.nfft))
         #print(type(cube_list), len(cube_list), cube_list[0].shape,run.nfft)
@@ -325,28 +326,27 @@ def __cube_spatial_convolution_in_parallel_2(run, spectrom, cube):
 
     num_cores = int(run.ncpu_convolution)
     if memory_available > memory_needed_ncores:
-        print('Start parallel convolution in for the different spatial scale')
+        print('Start parallel convolution in the different spatial scale')
         def init_worker():
 	        signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-        pool = mp.Pool(num_cores, init_worker)
-		
-		
-        for j in range(run.nfft):
-                result = []
-                result.append(pool.apply_async(__cube_scale_spatial_convolution, args=(run, spectrom, cube, i)))		
-       # try:
-      #          while True:
-     #                   time.sleep(0.5)
-    #                    if all([r.ready() for r in result]):
-   #                             break
-  #      except KeyboardInterrupt:
- #               pool.terminate()
-#                pool.join()
+        pool = mp.Pool(num_cores, init_worker)	
+        result = []
+        outputs = []	
+        for j in range(run.nfft):                
+                r1 = pool.apply_async(__cube_scale_spatial_convolution, args=(run, spectrom, cube, j))
+                result.append(r1)
+        for r in result:
+            try:
+                outputs.append(r.get())
+            except KeyboardInterrupt:
+                pool.terminate()
+                pool.join()
+
         pool.close()
         pool.join() 
-        print(type(result), len(result), result[0].shape, run.nfft)
-        return sum(result)
+        print(type(outputs), len(outputs), run.nfft)
+        return sum(outputs)
     else:
         print('Not enough RAM left in your device for this operation in parallel')
         logging.warning(f"Not enough RAM left in your device for this operation in parallel.")
@@ -397,8 +397,10 @@ def __cube_scale_spatial_convolution(run, spectrom, cube, scale_index):
     psf = cv.create_psf(spectrom, scale_sigma)
     # Spatial convolution
 #    cube[:, :, :, scale_index] = cv.mode_spatial_convolution(cube[:, :, :, scale_index], psf, run.spatial_convolution)
-    print('Scale: ', run.nfft-scale_index-1)
-    cube_convolve = cv.mode_spatial_convolution(cube[:, :, :, run.nfft-scale_index-1].copy(), psf, run.spatial_convolution)
+#    print('Scale: ', run.nfft-scale_index-1)
+    print('Scale: ', scale_index)
+    cube_convolve = cv.mode_spatial_convolution(cube[:, :, :, scale_index].copy(), psf, run.spatial_convolution)
+    print('End scale: ', scale_index)
     return cube_convolve
 
 
