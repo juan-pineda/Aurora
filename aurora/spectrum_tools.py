@@ -293,7 +293,7 @@ def __cube_spatial_convolution(run, spectrom, cube):
         # Spatial convolution
         cube[:, :, :, i] = cv.mode_spatial_convolution(cube[:, :, :, i], psf, run.spatial_convolution)
 
-def __cube_spatial_convolution_in_parallel_1(run, spectrom, cube):
+def __cube_spatial_convolution_in_parallel_test(run, spectrom, cube):
     """
     """
     cube_side, n_ch = spectrom.cube_dims()
@@ -316,6 +316,48 @@ def __cube_spatial_convolution_in_parallel_1(run, spectrom, cube):
         logging.info(f"Using a single cpu mode...")
         #break
 
+def __cube_spatial_convolution_in_parallel_1(run, spectrom, cube):
+    """
+    """
+    cube_side, n_ch = spectrom.cube_dims()
+    num_cores = int(run.ncpu_convolution)
+
+    def init_worker():
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+    pool = mp.Pool(num_cores, init_worker)
+
+    outputs = []
+    print('Start parallel convolution in the different spatial scale')
+    for scale_index in range(run.nfft):
+        print('Scale: ', scale_index)
+        logging.info(f"Preparing for spatial smoothing, kernel = {round(run.fft_hsml_limits[scale_index].value*1000, 1)} pc")
+        sys.stdout.flush()
+        # Kernel smoothing
+        scale_fwhm = (run.fft_hsml_limits[scale_index] / spectrom.pixsize).decompose().value
+        scale_sigma = spectrom.kernel_scale * scale_fwhm / ct.fwhm_sigma
+        logging.info(f"Size of the kernel in pixels = {round(scale_sigma, 1)}")  
+        # Enlarge the kernel adding the effect of the PSF
+        psf = cv.create_psf(spectrom, scale_sigma)
+        result = []
+        outputs1 = []
+        for i in range(n_ch):
+        #Convolution in the slides of the 3D cube in the scale_index
+                result.append(pool.apply_async(astropy.convolution.convolve_fft,
+                                       args=(cube[i,:,:,scale_index], psf)))                    
+        for r in result:                    
+                try:
+                    outputs1.append(r.get())
+                except KeyboardInterrupt:
+                    pool.terminate()
+                    pool.join()
+        
+        outputs.append(outputs1)  
+
+    pool.close()
+    pool.join() 
+    cube = np.array(outputs)
+    return cube.sum(axis=0)
 
 def __cube_spatial_convolution_in_parallel_2(run, spectrom, cube):
     """
