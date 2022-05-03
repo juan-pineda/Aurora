@@ -304,17 +304,18 @@ def __cube_spatial_convolution_in_parallel_1(run, spectrom, cube):
     num_cores = int(run.ncpu_convolution)
     if memory_available > memory_needed_ncores:
         print('Start parallel convolution in the different spatial scale')
+#cube_list = 
         cube_list = Parallel(n_jobs=num_cores)(delayed(__cube_scale_spatial_convolution)
-                                               (run, spectrom, cube, i) for i in range(run.nfft))
-        #print(type(cube_list), len(cube_list), cube_list[0].shape,run.nfft)
-        return sum(cube_list)
+                                               (run, spectrom, cube.copy(), i) for i in range(run.nfft))
+        print(type(cube_list), len(cube_list), cube_list[0].shape,run.nfft)
+        return np.sum(cube, axis=3)
     else:
         print('Not enough RAM left in your device for this operation in parallel')
         logging.warning(f"Not enough RAM left in your device for this operation in parallel.")
         logging.info(f"Needed {memory_needed_ncores}Mb, you have {memory_available}Mb Free.")
         logging.info(f"Using a single cpu mode...")
         #break
-#return get_cube_in_sequential(geom, run, spectrom, data_gas, nchunk)    
+
 
 def __cube_spatial_convolution_in_parallel_2(run, spectrom, cube):
     """
@@ -347,6 +348,9 @@ def __cube_spatial_convolution_in_parallel_2(run, spectrom, cube):
         pool.join() 
         print(type(outputs), len(outputs), run.nfft)
         return sum(outputs)
+       # cube = np.sum(cube, axis=3)        
+       # print(type(cube), cube.shape, run.nfft)
+       # return cube
     else:
         print('Not enough RAM left in your device for this operation in parallel')
         logging.warning(f"Not enough RAM left in your device for this operation in parallel.")
@@ -399,7 +403,8 @@ def __cube_scale_spatial_convolution(run, spectrom, cube, scale_index):
 #    cube[:, :, :, scale_index] = cv.mode_spatial_convolution(cube[:, :, :, scale_index], psf, run.spatial_convolution)
 #    print('Scale: ', run.nfft-scale_index-1)
     print('Scale: ', scale_index)
-    cube_convolve = cv.mode_spatial_convolution(cube[:, :, :, scale_index].copy(), psf, run.spatial_convolution)
+    cube_convolve = cv.mode_spatial_convolution(cube[:, :, :, scale_index], psf, run.spatial_convolution)
+#    cube[:, :, :, scale_index] = cv.mode_spatial_convolution(cube[:, :, :, scale_index], psf, run.spatial_convolution)
     print('End scale: ', scale_index)
     return cube_convolve
 

@@ -104,7 +104,7 @@ def spectrom_mock(ConfigFile):
         if run.convolution_parallel_method == 1:
             cube = spec.__cube_spatial_convolution_in_parallel_1(run, spectrom, cube.copy())
         if run.convolution_parallel_method == 2:
-            cube = spec.__cube_spatial_convolution_in_parallel_2(run, spectrom, cube.copy())            
+            cube = spec.__cube_spatial_convolution_in_parallel_2(run, spectrom, cube)            
     else:        
         spec.__cube_spatial_convolution(run, spectrom, cube)
         cube = np.sum(cube, axis=3)
