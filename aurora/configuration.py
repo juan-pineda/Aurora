@@ -734,6 +734,22 @@ class SpectromObj():
         self.check_velocity_sampl(geom)
         self.check_velocity_range(geom, run, spectrom)
 
+    def get_spectreal_sampl_HSMI3(self, geom, run):
+        """
+        Get the spectral resolution in angstrom from the 
+        resolving power and the observed wavelength. This 
+        setting is used for when run.HSIM3 = True
+        
+        Returns
+        -------
+        spectral_sampl : astropy.units.core.Unit 
+            Spectral sampling of the instrument in (angstrom).
+        """
+
+        if run.HSIM3 == True:
+            if np.isnan(self.spectral_sampl):
+                self.spectral_sampl = geom.lambda_obs.to('AA') / self.spectral_res
+
     def check_pixsize(self, geom):
         """
         Force consistency between pixsize and spatial_sampl,
@@ -855,12 +871,14 @@ class SpectromObj():
             Vrange = 2*(np.abs(em.vz) + 4*line_sigma)
 
             total_particles=0
-            particles = np.histogram(Vrange.to('km/s').value, bins = 100)[0]
-            vel = np.histogram(Vrange.to('km/s').value, bins = 100)[1]
+            nan_mask = np.isnan(Vrange.to('km/s').value)
+            histogram = np.histogram(Vrange.to('km/s').value[~nan_mask], bins = 100)
+            particles = histogram[0]
+            vel = histogram[1]
             
             for i in range(len(particles)):
                 total_particles+=particles[i]
-                if total_particles >= len(data_gas)*0.99:
+                if total_particles >= len(data_gas)*0.995:
                     break
 
             self.velocity_range = vel[i]*unit.km/unit.s
@@ -1013,6 +1031,7 @@ def get_allinput(ConfigFile):
     # > Adjust the parameters for self-consistency
     # > Defines the velocity/wavelength channels of the cube
     geom.check_redshift(spectrom)
+    spectrom.get_spectreal_sampl_HSMI3(geom, run)
     spectrom.check_params(geom, run, spectrom)
     spectrom.set_channels(geom)
     spectrom.set_reference()
