@@ -330,11 +330,11 @@ def __cube_spatial_convolution_in_parallel_1(run, spectrom, cube):
     outputs = []
     print('Start parallel convolution in the different spatial scale')
     for scale_index in range(run.nfft):
-        print('Scale: ', scale_index)
+        print('Scale: ', run.nfft-scale_index-1)
         logging.info(f"Preparing for spatial smoothing, kernel = {round(run.fft_hsml_limits[scale_index].value*1000, 1)} pc")
         sys.stdout.flush()
         # Kernel smoothing
-        scale_fwhm = (run.fft_hsml_limits[scale_index] / spectrom.pixsize).decompose().value
+        scale_fwhm = (run.fft_hsml_limits[run.nfft-scale_index-1] / spectrom.pixsize).decompose().value
         scale_sigma = spectrom.kernel_scale * scale_fwhm / ct.fwhm_sigma
         logging.info(f"Size of the kernel in pixels = {round(scale_sigma, 1)}")  
         # Enlarge the kernel adding the effect of the PSF
@@ -343,8 +343,8 @@ def __cube_spatial_convolution_in_parallel_1(run, spectrom, cube):
         outputs1 = []
         for i in range(n_ch):
         #Convolution in the slides of the 3D cube in the scale_index
-                result.append(pool.apply_async(astropy.convolution.convolve_fft,
-                                       args=(cube[i,:,:,scale_index], psf)))                    
+                result.append(pool.apply_async(astropy.convolution.convolve_fft, args=(cube[i,:,:,run.nfft-scale_index-1],
+                                                  psf), kwds={'psf_pad' : True, 'fft_pad' : True, 'allow_huge' : True}))                    
         for r in result:                    
                 try:
                     outputs1.append(r.get())
