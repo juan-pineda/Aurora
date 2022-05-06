@@ -187,6 +187,7 @@ def writing_datacube(geom, spectrom, run, dataset):
     prihdr["SPAT_RES"] = (spectrom.spatial_res_kpc.to(
         "kpc").value, "Spatial resolution in [kpc]")
     prihdr["SPEC_RES"] = (spectrom.spectral_res, "Spectral resolution, R")
+    prihdr["HSIM3"] = (False, "Cube bulit for HSIM3")
     hdulist.writeto(run.output_name, clobber=True)
     hdulist.close()
 
@@ -263,6 +264,8 @@ def writing_datacube_HSIM3(geom, spectrom, run, dataset):
                        "Redshift used to model HII fraction")
     prihdr["SPATRES"] = (spectrom.spatial_res.to(
         "arcsec").value, "Spatial resolution in arcsec")
+    prihdr["HSIM3"] = (True, "Cube bulit for HSIM3")
+
 
     hdulist.writeto(run.output_name, clobber=True)
     hdulist.close()

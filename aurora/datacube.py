@@ -15,12 +15,16 @@ import numpy as np
 import configparser
 from astropy.io import fits
 from astropy import units as unit
+import matplotlib.pyplot as plt
+from matplotlib import ticker
+from matplotlib.colors import LogNorm
 from astropy.cosmology import Planck13 as cosmo
 
 from . import presets
 from . import constants as ct
 from . import set_output as so
 from . import spectrum_tools as spec
+from . import configuration as config
 from . import array_operations as arr
 
 from pylab import *
@@ -64,8 +68,41 @@ class DatacubeObj():
         self.vel_ref = self.header["CRVAL3"] * unit.km/unit.s
         self.pixel_ref = self.header["CRPIX1"] - 1
         self.position_ref = self.header["CRVAL1"] * unit.pc
+        self.HSIM3 = self.header["HSIM3"]
         self.channels = (np.arange(self.spectral_dim) - self.channel_ref) * (
             self.velocity_sampl.to("km s^-1").value) + self.vel_ref.to("km s^-1").value
+
+    def get_attr_HSIM3(self):
+        """
+        Extract main information from the cards in the header for 
+        data cube 
+        """
+        self.spatial_unit = self.header["CUNIT1"] 
+        self.spatial_sampl = (self.header["CDELT1"] * unit.Unit(self.spatial_unit)).to('arcsec')
+        self.spectral_unit = self.header["CUNIT3"] 
+        self.spectral_sampl = (self.header["CDELT3"] * unit.Unit(self.spectral_unit)).to('AA') 
+        self.spatial_dim = self.header["NAXIS1"]
+        self.spectral_dim = self.header["NAXIS3"]
+        self.FoV = self.spatial_dim * self.spatial_sampl.to("arcsec")
+        self.spectral_range = self.spectral_dim * \
+            self.spectral_sampl.to("AA")
+        self.channel_ref = self.header["CRPIX3"] - 1
+        self.lambda_obs = (self.header["CRVAL3"] * unit.Unit(self.spectral_unit)).to('AA') 
+        self.pixel_ref = self.header["CRPIX1"] - 1
+        self.position_ref = self.header["CRVAL1"] * unit.pc
+        self.HSIM3 = self.header["HSIM3"]
+        self.redshift =  (self.lambda_obs/ct.Halpha0) - 1
+        self.dl = cosmo.luminosity_distance(self.redshift)
+        self.dist_angular = cosmo.angular_diameter_distance(self.redshift)
+        self.pixsize = self.spatial_sampl.to("rad").value * self.dist_angular.to("kpc")
+        self.fieldofview = self.spatial_dim * self.pixsize.to("kpc")
+        self.velocity_sampl = ct.c.to("km s-1") * self.spectral_sampl.to("angstrom").value / (
+            self.lambda_obs.to("angstrom").value)
+        self.vel_ref = 0. * unit.km / unit.s
+        self.BUNIT = self.header["BUNIT"]
+        self.channels = (np.arange(self.spectral_dim) - self.channel_ref) * (
+            self.velocity_sampl.to("km s^-1").value) + self.vel_ref.to("km s^-1").value
+
         
     def assign_attr(self, pixsize, velocity_sampl, spatial_dim, spectral_dim):
         """
@@ -192,7 +229,12 @@ class DatacubeObj():
         fluxmap : ndarray (2D)
             Fluxmap in erg s-1.
         """
-        self.fluxmap = self.cube.sum(axis=0) * self.velocity_sampl.to("km s-1").value
+        if self.HSIM3 == True:
+            self.fluxmap = self.cube.sum(axis=0)  * \
+                self.spectral_sampl.to("um") *  unit.Unit(self.BUNIT)
+        else:
+            self.fluxmap = self.cube.sum(axis=0) * \
+                self.velocity_sampl.to("km s-1").value * unit.erg / unit.s / unit.cm**2
 
     def velocity_map(self):
         """
@@ -207,10 +249,16 @@ class DatacubeObj():
             self.intensity_map()
         velmap = np.zeros(self.fluxmap.shape)
         for i in range(self.channels.size):
-            velmap = velmap + \
+            if self.HSIM3 == True:
+                velmap = velmap + \
+                self.cube[i, :, :] * self.channels[i] * \
+                self.spectral_sampl.to("um").value
+            else:
+                velmap = velmap + \
                 self.cube[i, :, :] * self.channels[i] * \
                 self.velocity_sampl.to("km s-1").value
-        self.velmap = velmap / self.fluxmap
+
+        self.velmap = velmap / self.fluxmap.value
 
     def dispersion_map(self):
         """
@@ -228,7 +276,10 @@ class DatacubeObj():
         disper = np.zeros(self.fluxmap.shape)
         for i in range(self.channels.size):
             disper += self.cube[i, :, :]*(self.channels[i] - self.velmap)**2
-        self.dispmap = np.sqrt(disper * self.velocity_sampl.to("km s-1").value / self.fluxmap)
+        if self.HSIM3 == True:
+            self.dispmap = np.sqrt(disper * self.spectral_sampl.to("um").value / self.fluxmap.value)
+        else:
+            self.dispmap = np.sqrt(disper * self.velocity_sampl.to("km s-1").value / self.fluxmap.value)
 
     def all_maps(self):
         """
@@ -247,6 +298,66 @@ class DatacubeObj():
         self.velocity_map()
         self.dispersion_map()
 
+    def plot_intensity_map(self, cmap = None, vmin=None, vmax=None,units_spacial = 'arcsec'):
+        if units_spacial == 'arcsec':
+            X = self.FoV.to('arcsec').value
+        elif units_spacial == 'kpc':
+            X = self.fieldofview.to('kpc').value
+        fig = plt.figure(figsize=(12, 10))
+        ax = fig.add_subplot(111)
+        p = plt.imshow(self.fluxmap.value, cmap=cmap, norm=LogNorm(), extent = [-X/2,X/2,-X/2,X/2],
+                  vmin=vmin, vmax=vmax)
+
+        cbar = fig.colorbar(p, ax=ax)
+        cbar.ax.get_yaxis().labelpad = 25
+        cbar.ax.set_ylabel(r'Flux [{}]'.format(str(self.fluxmap.unit)), rotation=-270, fontsize=20)
+        cbar.ax.tick_params(labelsize=23)
+        plt.ylabel('\nY  [{}]'.format(units_spacial), fontsize = 25)
+        plt.xlabel('\nX  [{}]'.format(units_spacial), fontsize = 25)
+        plt.xticks(size = 18)
+        plt.yticks(size = 18)
+        ax.xaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
+        ax.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
+
+    def plot_velocity_map(self, cmap = None, units_spacial = 'arcsec'):
+        if units_spacial == 'arcsec':
+            X = self.FoV.to('arcsec').value
+        elif units_spacial == 'kpc':
+            X = self.fieldofview.to('kpc').value
+        fig = plt.figure(figsize=(12, 10))
+        ax = fig.add_subplot(111)
+        p = plt.imshow(self.velmap, cmap=cmap, extent = [-X/2,X/2,-X/2,X/2])
+
+        cbar = fig.colorbar(p, ax=ax)
+        cbar.ax.get_yaxis().labelpad = 25
+        cbar.ax.set_ylabel(r'$V_{los} \ [km \ s^{-1}]$', rotation=-270, fontsize=20)
+        cbar.ax.tick_params(labelsize=23)
+        plt.ylabel('\nY  [{}]'.format(units_spacial), fontsize = 25)
+        plt.xlabel('\nX  [{}]'.format(units_spacial), fontsize = 25)
+        plt.xticks(size = 18)
+        plt.yticks(size = 18)
+        ax.xaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
+        ax.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
+
+    def plot_dispersion_map(self, cmap = None, units_spacial = 'arcsec'):
+        if units_spacial == 'arcsec':
+            X = self.FoV.to('arcsec').value
+        elif units_spacial == 'kpc':
+            X = self.fieldofview.to('kpc').value
+        fig = plt.figure(figsize=(12, 10))
+        ax = fig.add_subplot(111)
+        p = plt.imshow(self.dispmap, cmap=cmap, extent = [-X/2,X/2,-X/2,X/2])
+
+        cbar = fig.colorbar(p, ax=ax)
+        cbar.ax.get_yaxis().labelpad = 25
+        cbar.ax.set_ylabel(r'$V_{los} \ [km \ s^{-1}]$', rotation=-270, fontsize=20)
+        cbar.ax.tick_params(labelsize=23)
+        plt.ylabel('\nY  [{}]'.format(units_spacial), fontsize = 25)
+        plt.xlabel('\nX  [{}]'.format(units_spacial), fontsize = 25)
+        plt.xticks(size = 18)
+        plt.yticks(size = 18)
+        ax.xaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
+        ax.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
 
     def clean_lowflux(self, thresh = 11):
         """

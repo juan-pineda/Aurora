@@ -872,13 +872,14 @@ class SpectromObj():
 
             total_particles=0
             nan_mask = np.isnan(Vrange.to('km/s').value)
-            histogram = np.histogram(Vrange.to('km/s').value[~nan_mask], bins = 100)
+            histogram = np.histogram(Vrange.to('km/s').value[~nan_mask], bins = 10000)
             particles = histogram[0]
             vel = histogram[1]
+            print(particles,vel)
             
             for i in range(len(particles)):
                 total_particles+=particles[i]
-                if total_particles >= len(data_gas)*0.995:
+                if total_particles >= len(data_gas)*0.93:
                     break
 
             self.velocity_range = vel[i]*unit.km/unit.s
