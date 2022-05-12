@@ -41,6 +41,7 @@ from . import spectrum_tools as spec
 from . import configuration as config
 from . import array_operations as arr
 from . import rahmati as rahmati
+from . import simu_projection as spj
 
 warnings.filterwarnings("ignore")
 
@@ -50,7 +51,11 @@ def __setup_logging():
         filename="aurora.log", 
         level=logging.INFO)
 
-
+def __setup_logging_spj():
+    logging.basicConfig(
+        format="%(levelname)s:%(message)s", 
+        filename="aurora_spj.log", 
+        level=logging.INFO)
 
 def __aurora_version():
     """
@@ -130,6 +135,49 @@ def spectrom_mock(ConfigFile):
         so.writing_datacube_HSIM3(geom, spectrom, run, cube)
     else:        
         so.writing_datacube(geom, spectrom, run, cube)
+
+
+def Simu_2D_projection(ConfigFile):
+    """
+    Map the estimated H-alpha or HI flux from the simulation to a mock data
+    cube and stores the output in fits format.
+
+    Parameters
+    ----------
+    ConfigFile : location of the configuration file containing the input
+        parameters needed.
+    """
+    __setup_logging_spj()
+
+    # Code flow:
+    # =====================
+    # > Load the input parameters from ConfigFile
+    # > Read the snapshot
+    # > Set geometrical orientation and retain only the desired gas particles
+    geom, run, spectrom = config.get_allinput(ConfigFile)
+    data = snap.read_snap(run.input_file)
+    data_gas = snap.set_snapshots_ready(geom, run, data)[0]
+    del data
+    gc.collect()
+    
+    # > Retain only those gas particles wich lie inside the field of view
+    lim = spectrom.fieldofview.to("kpc").value/2.
+    data_gas = snap.filter_array(data_gas,["x","y"],2*[-lim],2*[lim],2*["kpc"])
+
+    # Code flow:
+    # =====================
+    # > Determine the smoothing lengths
+    # > Increase target resolution to minimize geometrical concerns
+    # > Compute the fluxes separately for each AMR scale
+    # > Smooth the fluxes from each scale and collapse them
+    snap.set_hsml_limits(run, data_gas)
+
+    logging.info(f"Start the proyection")
+    proyection = spj.Projection_2D(data_gas)
+    proyection.get_project_2D_histogram(run, spectrom)
+
+    logging.info(f"Created file {run.output_name}")
+    so.writing_projection(geom, spectrom, run, proyection.cube)
 
 
 def degrade_mastercube(ConfigFile):
