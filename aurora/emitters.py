@@ -52,18 +52,22 @@ class Emitters:
     # Get the main physical quantities in the simulation, converting pynbody
     # instances to astropy ones, to assure compatibility across operations.
     def __init__(self, data_gas, redshift=None):
-        self.N = len(data_gas)
-        self.data = data_gas
         self.redshift = redshift
-        self.x = np.array(data_gas["x"].in_units("kpc"))*unit.kpc
-        self.y = np.array(data_gas["y"].in_units("kpc"))*unit.kpc
-        self.z = np.array(data_gas["z"].in_units("kpc"))*unit.kpc
         self.dens = np.array(data_gas["rho"].in_units("g cm**-3"))*unit.g/unit.cm**3
-        self.mass = np.unique((np.array(data_gas["mass"].in_units("1.99e+43 g"))*
-                               1.99e+43*unit.g).to("Msun"))
-        self.vz = np.array(data_gas["vz"].in_units("cm s**-1"))*unit.cm/unit.s
-        self.smooth = np.array(data_gas["smooth"].in_units("kpc"))*unit.kpc
+        self.mass = (np.array(data_gas["mass"].in_units("1.99e+43 g"))*
+                               1.99e+43*unit.g).to("Msun")
         self.u = np.array(data_gas["u"].in_units("cm**2 s**-2"))*unit.cm**2/unit.s**2
+        mask = (self.u<0)|(self.mass<0)|(self.dens<0)
+        self.dens = self.dens[~mask]
+        self.mass = self.mass[~mask]
+        self.u = self.u[~mask]
+        self.N = len(data_gas[~mask])
+        self.data = data_gas[~mask]
+        self.x = (np.array(data_gas["x"].in_units("pc"))*unit.pc)[~mask]
+        self.y = (np.array(data_gas["y"].in_units("pc"))*unit.pc)[~mask]
+        self.z = (np.array(data_gas["z"].in_units("pc"))*unit.pc)[~mask]
+        self.vz = (np.array(data_gas["vz"].in_units("km s**-1"))*unit.km/unit.s)[~mask]
+        self.smooth = (np.array(data_gas["smooth"].in_units("kpc"))*unit.kpc)[~mask]
 
     def get_state(self,spectrom):
         """
