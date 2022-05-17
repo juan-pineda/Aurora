@@ -1,7 +1,10 @@
 
+import math
 import numpy as np
+from tqdm import tqdm
 from astropy import units as unit
 from aurora import constants as ct
+
 
 def get_vel_dispersion(temp, mu):
     """
@@ -91,12 +94,12 @@ def histogram_cube(x,y, x_bins, y_bins, dens, mass, temp, vel, dispersion_vel, p
     map_disp = np.histogram2d(x.to("pc").value,y.to("pc").value, 
                 bins=[x_bins,y_bins], weights=dispersion_vel*dens)[0]
    # map_disp = map_disp/map_mass
-    cube[0, :, :] = map_dens
-    cube[1, :, :] = map_mass
-    cube[2, :, :] = map_temp
-    cube[3, :, :] = map_vel
-    cube[4, :, :] = map_disp
-    cube[5, :, :] = map_number
+    cube[0, :, :] += map_dens.value
+    cube[1, :, :] += map_mass.value
+    cube[2, :, :] += map_temp.value
+    cube[3, :, :] += map_vel.value
+    cube[4, :, :] += map_disp.value
+    cube[5, :, :] += map_number
 
 
 class Projection_2D:
@@ -242,6 +245,40 @@ class Projection_2D:
         return [nupos_x,nupos_y,nupos_z,numass_t,nutemp_t,nudens_t]
 	    
 
+    def chunk_projection(self, run, spectrom):
+
+        self.scale = np.digitize(self.smooth.to("kpc").value,
+                1.1 * run.fft_hsml_limits.to("kpc").value)
+        self.pixsize = run.fft_hsml_limits[0].to("pc")
+        ok_level = np.where(self.smooth == pixsize)[0]
+
+        dim = int((spectrom.fieldofview.to("pc")/pixsize.to("pc")).value)        	
+        spectrom.spatial_dim = dim
+        spectrom.pixsize = np.round(pixsize,2)
+
+        min_celx = np.min(self.x[ok_level].to("pc").value)
+        min_cely = np.min(self.y[ok_level].to("pc").value)
+        lim = spectrom.fieldofview.to("pc").value/2
+        minbins_x = min_celx - int(np.abs(min_celx+lim)/pixsize.value)*pixsize.value
+        minbins_y = min_cely - int(np.abs(min_cely+lim)/pixsize.value)*pixsize.value
+
+        self.x_bins = np.arange(minbins_x - pixsize.value/2, -minbins_x + pixsize.value/2, pixsize.value)
+        self.y_bins = np.arange(minbins_y - pixsize.value/2, -minbins_y + pixsize.value/2, pixsize.value)
+        self.cube = np.zeros((6, x_bins.size-1, y_bins.size-1, run.nfft))
+        
+        histogram_cube(self.x[ok_level], self.y[ok_level], x_bins, y_bins, self.dens[ok_level], self.mass[ok_level], 
+                      self.temp[ok_level], self.vz[ok_level], self.dispersion_vel[ok_level], pixsize,
+                      dim, self.cube[:,:,:,0])
+        
+        for i in tqdm(range(nchunk)):
+            start = i * run.nvector
+            stop = start + min(run.nvector, len(data_gas) - start)
+            __project_spectrom_flux(
+                geom, run, spectrom, data_gas, start, stop, cube)                   
+        
+        
+
+
     def get_project_2D_histogram(self, run, spectrom):
         """
         Compute the H-alpha emission of a bunch of particles and project it
@@ -296,63 +333,74 @@ class Projection_2D:
                       dim, self.cube[:,:,:,0])
 
         for n in range(1,len(run.fft_hsml_limits)):
-            print(n)
+            print('number of scale:', n)
             ok_level = np.where(self.smooth == run.fft_hsml_limits[n])[0]
-            nok_level = ok_level.size
             n_cell_small = int(run.fft_hsml_limits.to("pc")[n]/pixsize.to("pc"))
             a = np.array([i-(n_cell_small-1)/2 for i in range(n_cell_small)])*round(pixsize.value,0)
-            nupos = np.zeros((nok_level*n_cell_small**3,3))
-            X,Y,Z = np.meshgrid(a,a,a)
-            shiftx=X.reshape(1,n_cell_small**3)[0]
-            shifty=Y.reshape(1,n_cell_small**3)[0]
-            shiftz=Z.reshape(1,n_cell_small**3)[0]
-            #x
-            u,d = np.meshgrid(shiftx,self.x[ok_level].to("pc").value)
-            nupos[:,0]=((u+d)).reshape(1,
-            shiftx.size*nok_level)[0]
-            
-            #y
-            u,d = np.meshgrid(shifty,self.y[ok_level].to("pc").value)
-            nupos[:,1]=((u+d)).reshape(1,
-            shifty.size*nok_level)[0]
+            print(ok_level.size)
+            nchunk = int(math.ceil(len(ok_level)*n_cell_small**3 / float(run.nvector)))
+            nvector = int(len(ok_level)/nchunk) 
+            for i in tqdm(range(nchunk)): 
+                start = i * nvector
+                if i == nchunk-1:
+                    #print('last one')
+                    stop = len(ok_level)#start + min(run.nvector, len(ok_level) - start)  
+                else:
+                    stop = start + min(nvector, len(ok_level) - start)  
+                print(start,stop)              
+                nok_level = ok_level[start:stop].size
+                nupos = np.zeros((nok_level*n_cell_small**3,3))
 
-            #z
-            u,d = np.meshgrid(shiftz,self.z[ok_level].to("pc").value)
-            nupos[:,2]=((u+d)).reshape(1,
-            shiftz.size*nok_level)[0]
+                X,Y,Z = np.meshgrid(a,a,a)
+                shiftx=X.reshape(1,n_cell_small**3)[0]
+                shifty=Y.reshape(1,n_cell_small**3)[0]
+                shiftz=Z.reshape(1,n_cell_small**3)[0]
+                #xl
+                u,d = np.meshgrid(shiftx,self.x[ok_level[start:stop]].to("pc").value)
+                nupos[:,0]=((u+d)).reshape(1,
+                shiftx.size*nok_level)[0]
+                
+                #y
+                u,d = np.meshgrid(shifty,self.y[ok_level[start:stop]].to("pc").value)
+                nupos[:,1]=((u+d)).reshape(1,
+                shifty.size*nok_level)[0]
+                #print(nupos.shape)
+                #z
+                u,d = np.meshgrid(shiftz,self.z[ok_level[start:stop]].to("pc").value)
+                nupos[:,2]=((u+d)).reshape(1,
+                shiftz.size*nok_level)[0]
 
-            nupos = nupos*unit.pc
-
-            #components
-            #temp
-            u,d = np.meshgrid(np.zeros(n_cell_small**3),
-                          self.temp[ok_level])
-            nutemp = (u+d.value).reshape(nok_level*n_cell_small**3)*unit.K
-            #dens
-            u,d = np.meshgrid(np.zeros(n_cell_small**3),
-                          self.dens[ok_level])
-            nudens = (u+d.value).reshape(nok_level*n_cell_small**3)*unit.g/unit.cm**3   
-            #mas
-            u,d = np.meshgrid(np.zeros(n_cell_small**3),
-                          self.mass[ok_level]/n_cell_small**3)
-            numass = (u+d.value).reshape(nok_level*n_cell_small**3)*unit.solMass
-
-            #vel
-            u,d = np.meshgrid(np.zeros(n_cell_small**3),
-                          self.vz[ok_level])
-            nuvel = (u+d.value).reshape(nok_level*n_cell_small**3)*unit.km/unit.s
-            #disp
-            u,d = np.meshgrid(np.zeros(n_cell_small**3),
-                          self.dispersion_vel[ok_level])
-            nudis = (u+d.value).reshape(nok_level*n_cell_small**3)*unit.km/unit.s  
-            print(numass.shape)            
-            histogram_cube(nupos[:,0], nupos[:,1], x_bins, y_bins, nudens, numass, 
-                      nutemp, nuvel, nudis, pixsize, dim, self.cube[:,:,:,n])
-            del nupos
-            del numass
-            del nudens
-            del nuvel
-            del nudis
+                nupos = nupos*unit.pc
+    
+                #components
+                #temp
+                u,d = np.meshgrid(np.zeros(n_cell_small**3),
+                              self.temp[ok_level[start:stop]])
+                nutemp = (u+d.value).reshape(nok_level*n_cell_small**3)*unit.K
+                #dens
+                u,d = np.meshgrid(np.zeros(n_cell_small**3),
+                              self.dens[ok_level[start:stop]])
+                nudens = (u+d.value).reshape(nok_level*n_cell_small**3)*unit.g/unit.cm**3   
+                #mas
+                u,d = np.meshgrid(np.zeros(n_cell_small**3),
+                              self.mass[ok_level[start:stop]]/n_cell_small**3)
+                numass = (u+d.value).reshape(nok_level*n_cell_small**3)*unit.solMass
+    
+                #vel
+                u,d = np.meshgrid(np.zeros(n_cell_small**3),
+                              self.vz[ok_level[start:stop]])
+                nuvel = (u+d.value).reshape(nok_level*n_cell_small**3)*unit.km/unit.s
+                #disp
+                u,d = np.meshgrid(np.zeros(n_cell_small**3),
+                              self.dispersion_vel[ok_level[start:stop]])
+                nudis = (u+d.value).reshape(nok_level*n_cell_small**3)*unit.km/unit.s           
+                histogram_cube(nupos[:,0], nupos[:,1], x_bins, y_bins, nudens, numass, 
+                          nutemp, nuvel, nudis, pixsize, dim, self.cube[:,:,:,n])
+                del nupos
+                del numass
+                del nudens
+                del nuvel
+                del nudis
         self.cube = np.nansum(self.cube, axis = 3)
         
      #   return self.cube
