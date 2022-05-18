@@ -63,11 +63,11 @@ class Emitters:
         self.u = self.u[~mask]
         self.N = len(data_gas[~mask])
         self.data = data_gas[~mask]
-        self.x = (np.array(data_gas["x"].in_units("pc"))*unit.pc)[~mask]
-        self.y = (np.array(data_gas["y"].in_units("pc"))*unit.pc)[~mask]
-        self.z = (np.array(data_gas["z"].in_units("pc"))*unit.pc)[~mask]
-        self.vz = (np.array(data_gas["vz"].in_units("km s**-1"))*unit.km/unit.s)[~mask]
-        self.smooth = (np.array(data_gas["smooth"].in_units("kpc"))*unit.kpc)[~mask]
+        self.x = (np.array(data_gas["x"][~mask].in_units("pc"))*unit.pc)[~mask]
+        self.y = (np.array(data_gas["y"][~mask].in_units("pc"))*unit.pc)[~mask]
+        self.z = (np.array(data_gas["z"][~mask].in_units("pc"))*unit.pc)[~mask]
+        self.vz = (np.array(data_gas["vz"][~mask].in_units("km s**-1"))*unit.km/unit.s)[~mask]
+        self.smooth = (np.array(data_gas["smooth"][~mask].in_units("kpc"))*unit.kpc)[~mask]
 
     def get_state(self,spectrom):
         """
