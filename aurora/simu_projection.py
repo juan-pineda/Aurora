@@ -337,19 +337,21 @@ class Projection_2D:
             ok_level = np.where(self.smooth == run.fft_hsml_limits[n])[0]
             n_cell_small = int(run.fft_hsml_limits.to("pc")[n]/pixsize.to("pc"))
             a = np.array([i-(n_cell_small-1)/2 for i in range(n_cell_small)])*round(pixsize.value,0)
-            print(ok_level.size)
-            nchunk = int(math.ceil(len(ok_level)*n_cell_small**3 / float(run.nvector)))
-            nvector = int(len(ok_level)/nchunk) 
+            print('size: ', ok_level.size)
+            nchunk = int(math.ceil((len(ok_level)*(n_cell_small**3)) / float(run.nvector)))
+            nvector = int(math.ceil(len(ok_level)/nchunk))
+            print(nchunk, nvector) 
             for i in tqdm(range(nchunk)): 
                 start = i * nvector
                 if i == nchunk-1:
                     #print('last one')
-                    stop = len(ok_level)#start + min(run.nvector, len(ok_level) - start)  
+                    stop = start + min(run.nvector, len(ok_level) - start)  
                 else:
-                    stop = start + min(nvector, len(ok_level) - start)  
-                print(start,stop)              
+                    stop = start + min(nvector, len(ok_level) - start)              
                 nok_level = ok_level[start:stop].size
-                nupos = np.zeros((nok_level*n_cell_small**3,3))
+              #  print(nok_level*n_cell_small**3)  
+                print('size cut: ', start, stop)  
+                nupos = np.zeros((nok_level*n_cell_small**3,2))
 
                 X,Y,Z = np.meshgrid(a,a,a)
                 shiftx=X.reshape(1,n_cell_small**3)[0]
@@ -366,9 +368,9 @@ class Projection_2D:
                 shifty.size*nok_level)[0]
                 #print(nupos.shape)
                 #z
-                u,d = np.meshgrid(shiftz,self.z[ok_level[start:stop]].to("pc").value)
-                nupos[:,2]=((u+d)).reshape(1,
-                shiftz.size*nok_level)[0]
+#                u,d = np.meshgrid(shiftz,self.z[ok_level[start:stop]].to("pc").value)
+  #              nupos[:,2]=((u+d)).reshape(1,
+   #             shiftz.size*nok_level)[0]
 
                 nupos = nupos*unit.pc
     
