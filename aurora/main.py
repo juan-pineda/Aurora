@@ -95,8 +95,9 @@ def spectrom_mock(ConfigFile):
     # > Retain only those gas particles wich lie inside the field of view
     lim = spectrom.fieldofview.to("kpc").value/2.
     data_gas = snap.filter_array(data_gas,["x","y"],2*[-lim],2*[lim],2*["kpc"])
-    mask = (data_gas['u']<0)|(data_gas['mass']<0)|(data_gas['rho']<0)
+    mask = (data_gas['u']<0)|(data_gas['mass']<0)|(data_gas['rho']<0)|(data_gas['temp']<0)
     data_gas = data_gas[~mask]
+    print(np.min(data_gas['rho']))
 
     # Code flow:
     # =====================
