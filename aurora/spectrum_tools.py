@@ -357,6 +357,8 @@ def __cube_spatial_convolution_in_parallel_1(run, spectrom, cube):
     pool.close()
     pool.join() 
     cube = np.array(outputs)
+    mask = cube < 0
+    cube[mask] = 0
     return cube.sum(axis=0)
 
 def __cube_spatial_convolution_in_parallel_2(run, spectrom, cube):
