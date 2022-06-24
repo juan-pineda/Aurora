@@ -69,6 +69,8 @@ default_values["spectrom"] = {
     "lum_dens_relation": ["square"],
     "density_threshold": ["Not"],
     "equivalent_luminosity": ["min"],
+    "density_floor": [np.nan],
+    "lum_floor": [np.nan],
     "use_ionized_hydrogen": ["True"]
 }
 

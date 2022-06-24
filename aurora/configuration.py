@@ -551,6 +551,14 @@ class SpectromObj():
             Equivalent luminosity that replace the H-alpha emission
             for certain gas particles that exceed the established
             density threshold. See more info in emitters.py.
+        density_floor : float
+            Density floor that allows to change the H-alpha
+            emission for certain gas particles. See more info
+            in emitters.py.  
+        lum_floor : float
+            Floor in lumninosity and Equivalent luminosity that replace
+            the H-alpha emission for certain gas particles according with
+            the floor value. See more info in emitters.py.
         use_ionized_hydrogen : bool
             Determines whether or not to use the ionized hydrogen
             information stored in the simulated particles for luminosity
@@ -621,6 +629,10 @@ class SpectromObj():
             spec_conf, "spectrom", "density_threshold", str)
         self.equivalent_luminosity = read_var(
             spec_conf, "spectrom", "equivalent_luminosity", str)
+        self.density_floor = read_var(
+            spec_conf, "spectrom", "density_floor", float)
+        self.lum_floor = read_var(
+            spec_conf, "spectrom", "lum_floor", float)
         self.use_ionized_hydrogen = read_var(
             spec_conf, "spectrom", "use_ionized_hydrogen", bool)
 

@@ -210,10 +210,12 @@ class Emitters:
         Halpha_lum = Halpha_lum.to("erg s**-1")
         return Halpha_lum
 
-    def density_cut(self, density_threshold = "Not", equivalent_luminosity = "min"):
+    def density_cut(self, density_threshold = "Not", equivalent_luminosity = "min",
+                         density_floor = np.nan, lum_floor = np.nan):
         """
         Replaces the H-alpha emission for an equivalent luminosity, for certain
-        gas particles that exceed the established density threshold.
+        gas particles that exceed the established density threshold (or luminisity/density
+        floor).
         
         Parameters
         ----------
@@ -246,7 +248,7 @@ class Emitters:
             else:
                 self.Halpha_lum[tokill] = np.float(equivalent_luminosity) * unit.erg * unit.s**-1
         elif density_threshold == "floor_rho":
-            thresh = 10**np.float(density_threshold)
+            thresh = 10**np.float(density_floor)
             print("Cutting a threshold: ",thresh)
             print("Replacing luminosity by: ", equivalent_luminosity, ' in 6.77e-23 g cm**-3')
             tokill = (self.dens.to("g cm**-3").value < thresh)
@@ -255,8 +257,8 @@ class Emitters:
             else:
                 self.Halpha_lum[tokill] = np.float(equivalent_luminosity) * unit.erg * unit.s**-1
         elif density_threshold == "floor_lum":
-            thresh = 10**np.float(density_threshold)
-            print("Cutting a threshold: ",thresh)
+            thresh = 10**np.float(lum_floor)
+            print("Cutting a threshold: ", thresh)
             print("Replacing luminosity by: ", thresh, ' in erg s**-1')
             tokill = (self.Halpha_lum.to("erg s**-1").value < thresh)
             if equivalent_luminosity == "min":

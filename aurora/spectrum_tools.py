@@ -186,7 +186,8 @@ def __project_spectrom_flux(geom, run, spectrom, data_gas, *args):
         em.get_luminosityHI()
     else:
         em.get_luminosityHalpha(spectrom.lum_dens_rel)
-    em.apply_density_cut(spectrom.density_threshold, spectrom.equivalent_luminosity)
+    em.apply_density_cut(spectrom.density_threshold, spectrom.equivalent_luminosity,
+                          spectrom.density_floor, spectrom.lum_floor)
     em.get_vel_dispersion()
 
     x, y, index = spectrom.position_in_pixels(em.x,em.y)
