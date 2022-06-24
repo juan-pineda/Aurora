@@ -357,8 +357,8 @@ def __cube_spatial_convolution_in_parallel_1(run, spectrom, cube):
     pool.close()
     pool.join() 
     cube = np.array(outputs)
-    mask = cube < 0
-    cube[mask] = 0
+    #mask = cube < 0
+    #cube[mask] = 0
     return cube.sum(axis=0)
 
 def __cube_spatial_convolution_in_parallel_2(run, spectrom, cube):
@@ -399,7 +399,7 @@ def __cube_spatial_convolution_in_parallel_2(run, spectrom, cube):
         print('Not enough RAM left in your device for this operation in parallel')
         logging.warning(f"Not enough RAM left in your device for this operation in parallel.")
         logging.info(f"Needed {memory_needed_ncores}Mb, you have {memory_available}Mb Free.")
-        logging.info(f"Using a single cpu mode...")
+#        logging.info(f"Using a single cpu mode...")
 
 def __cube_scale_spatial_convolution(run, spectrom, cube, scale_index):
     """
