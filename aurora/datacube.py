@@ -298,66 +298,97 @@ class DatacubeObj():
         self.velocity_map()
         self.dispersion_map()
 
-    def plot_intensity_map(self, cmap = None, vmin=None, vmax=None,units_spacial = 'arcsec'):
+    def plot_intensity_map(self, cmap = None, vmin=None, vmax=None, units_spacial = 'arcsec'):
         if units_spacial == 'arcsec':
             X = self.FoV.to('arcsec').value
         elif units_spacial == 'kpc':
             X = self.fieldofview.to('kpc').value
+        elif units_spacial == 'both':
+            X_k = self.fieldofview.to('kpc').value
+            X = self.FoV.to('arcsec').value
+
         fig = plt.figure(figsize=(12, 10))
         ax = fig.add_subplot(111)
-        p = plt.imshow(self.fluxmap.value, cmap=cmap, norm=LogNorm(), extent = [-X/2,X/2,-X/2,X/2],
-                  vmin=vmin, vmax=vmax)
 
-        cbar = fig.colorbar(p, ax=ax)
-        cbar.ax.get_yaxis().labelpad = 25
-        cbar.ax.set_ylabel(r'Flux [{}]'.format(str(self.fluxmap.unit)), rotation=-270, fontsize=20)
-        cbar.ax.tick_params(labelsize=23)
-        plt.ylabel('\nY  [{}]'.format(units_spacial), fontsize = 25)
-        plt.xlabel('\nX  [{}]'.format(units_spacial), fontsize = 25)
+        i = ax.imshow(self.fluxmap.value, cmap=cmap, norm=LogNorm(), extent = [-X/2,X/2,-X/2,X/2],
+                  vmin=vmin, vmax=vmax)         
+
+        cbar = fig.colorbar(i, ax=ax)
+        cbar.ax.get_yaxis().labelpad = 20
+#        cbar.ax.set_ylabel(r'Flux [{}]'.format(str(self.fluxmap.unit)), rotation=-270, fontsize=20)
+        cbar.ax.set_ylabel(r'Flux [$erg \ arcsec^{-2} \ cm^{-2} \ s^{-1}$]', rotation=-270, fontsize=20)
+        cbar.ax.tick_params(labelsize=18)
         plt.xticks(size = 18)
         plt.yticks(size = 18)
         ax.xaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
         ax.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
+        if units_spacial == 'both':
+            ax2 = ax.secondary_xaxis("top", functions=(lambda x: x * X_k/X, lambda x: x * X_k/X))
+            ax2.set_xlabel('\nX  [{}] \n'.format('kpc'), fontsize = 20)
+            ax2.set_xticklabels([],fontsize=18)
+            ax2.xaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))   
+            units_spacial = 'arcsec'
+        plt.ylabel('\nY  [{}]'.format(units_spacial), fontsize = 20)
+        plt.xlabel('\nX  [{}]'.format(units_spacial), fontsize = 20)
+        
 
     def plot_velocity_map(self, cmap = None, units_spacial = 'arcsec'):
         if units_spacial == 'arcsec':
             X = self.FoV.to('arcsec').value
         elif units_spacial == 'kpc':
             X = self.fieldofview.to('kpc').value
+        elif units_spacial == 'both':
+            X_k = self.fieldofview.to('kpc').value
+            X = self.FoV.to('arcsec').value
         fig = plt.figure(figsize=(12, 10))
         ax = fig.add_subplot(111)
         p = plt.imshow(self.velmap, cmap=cmap, extent = [-X/2,X/2,-X/2,X/2])
 
         cbar = fig.colorbar(p, ax=ax)
-        cbar.ax.get_yaxis().labelpad = 25
+        cbar.ax.get_yaxis().labelpad = 20
         cbar.ax.set_ylabel(r'$V_{los} \ [km \ s^{-1}]$', rotation=-270, fontsize=20)
-        cbar.ax.tick_params(labelsize=23)
-        plt.ylabel('\nY  [{}]'.format(units_spacial), fontsize = 25)
-        plt.xlabel('\nX  [{}]'.format(units_spacial), fontsize = 25)
+        cbar.ax.tick_params(labelsize=18)
         plt.xticks(size = 18)
         plt.yticks(size = 18)
         ax.xaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
         ax.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
+        if units_spacial == 'both':
+            ax2 = ax.secondary_xaxis("top", functions=(lambda x: x * X_k/X, lambda x: x * X_k/X))
+            ax2.set_xlabel('\nX  [{}] \n'.format('kpc'), fontsize = 20)
+            ax2.set_xticklabels([],fontsize=18)
+            ax2.xaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))   
+            units_spacial = 'arcsec'
+        plt.ylabel('\nY  [{}]'.format(units_spacial), fontsize = 20)
+        plt.xlabel('\nX  [{}]'.format(units_spacial), fontsize = 20)
 
     def plot_dispersion_map(self, cmap = None, units_spacial = 'arcsec'):
         if units_spacial == 'arcsec':
             X = self.FoV.to('arcsec').value
         elif units_spacial == 'kpc':
             X = self.fieldofview.to('kpc').value
+        elif units_spacial == 'both':
+            X_k = self.fieldofview.to('kpc').value
+            X = self.FoV.to('arcsec').value
         fig = plt.figure(figsize=(12, 10))
         ax = fig.add_subplot(111)
         p = plt.imshow(self.dispmap, cmap=cmap, extent = [-X/2,X/2,-X/2,X/2])
 
         cbar = fig.colorbar(p, ax=ax)
-        cbar.ax.get_yaxis().labelpad = 25
+        cbar.ax.get_yaxis().labelpad = 20
         cbar.ax.set_ylabel(r'$V_{los} \ [km \ s^{-1}]$', rotation=-270, fontsize=20)
-        cbar.ax.tick_params(labelsize=23)
-        plt.ylabel('\nY  [{}]'.format(units_spacial), fontsize = 25)
-        plt.xlabel('\nX  [{}]'.format(units_spacial), fontsize = 25)
+        cbar.ax.tick_params(labelsize=18)
         plt.xticks(size = 18)
         plt.yticks(size = 18)
         ax.xaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
         ax.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
+        if units_spacial == 'both':
+            ax2 = ax.secondary_xaxis("top", functions=(lambda x: x * X_k/X, lambda x: x * X_k/X))
+            ax2.set_xlabel('\nX  [{}] \n'.format('kpc'), fontsize = 20)
+            ax2.set_xticklabels([],fontsize=18)
+            ax2.xaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))   
+            units_spacial = 'arcsec'
+        plt.ylabel('\nY  [{}]'.format(units_spacial), fontsize = 20)
+        plt.xlabel('\nX  [{}]'.format(units_spacial), fontsize = 20)
 
     def clean_lowflux(self, thresh = 11):
         """
