@@ -245,6 +245,24 @@ class Emitters:
                 self.Halpha_lum[tokill] = np.min(self.Halpha_lum)
             else:
                 self.Halpha_lum[tokill] = np.float(equivalent_luminosity) * unit.erg * unit.s**-1
+        elif density_threshold == "floor_rho":
+            thresh = 10**np.float(density_threshold)
+            print("Cutting a threshold: ",thresh)
+            print("Replacing luminosity by: ", equivalent_luminosity, ' in 6.77e-23 g cm**-3')
+            tokill = (self.dens.to("g cm**-3").value < thresh)
+            if equivalent_luminosity == "min":
+                self.Halpha_lum[tokill] = np.min(self.Halpha_lum[~tokill])
+            else:
+                self.Halpha_lum[tokill] = np.float(equivalent_luminosity) * unit.erg * unit.s**-1
+        elif density_threshold == "floor_lum":
+            thresh = 10**np.float(density_threshold)
+            print("Cutting a threshold: ",thresh)
+            print("Replacing luminosity by: ", thresh, ' in erg s**-1')
+            tokill = (self.Halpha_lum.to("erg s**-1").value < thresh)
+            if equivalent_luminosity == "min":
+                self.Halpha_lum[tokill] = np.min(self.Halpha_lum[~tokill])
+            else:
+                self.Halpha_lum[tokill] = np.float(thresh) * unit.erg * unit.s**-1
         else:
             thresh = 10**np.float(density_threshold)
             print("Cutting a threshold: ",thresh)
