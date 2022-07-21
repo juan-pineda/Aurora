@@ -332,7 +332,7 @@ class DatacubeObj():
         plt.xlabel('\nX  [{}]'.format(units_spacial), fontsize = 20)
         
 
-    def plot_velocity_map(self, cmap = None, units_spacial = 'arcsec'):
+    def plot_velocity_map(self, cmap = None, units_spacial = 'arcsec', vmin=None, vmax=None):
         if units_spacial == 'arcsec':
             X = self.FoV.to('arcsec').value
         elif units_spacial == 'kpc':
@@ -342,7 +342,8 @@ class DatacubeObj():
             X = self.FoV.to('arcsec').value
         fig = plt.figure(figsize=(12, 10))
         ax = fig.add_subplot(111)
-        p = plt.imshow(self.velmap, cmap=cmap, extent = [-X/2,X/2,-X/2,X/2])
+        p = plt.imshow(self.velmap, cmap=cmap, extent = [-X/2,X/2,-X/2,X/2],
+                  vmin=vmin, vmax=vmax)
 
         cbar = fig.colorbar(p, ax=ax)
         cbar.ax.get_yaxis().labelpad = 20
@@ -361,7 +362,7 @@ class DatacubeObj():
         plt.ylabel('\nY  [{}]'.format(units_spacial), fontsize = 20)
         plt.xlabel('\nX  [{}]'.format(units_spacial), fontsize = 20)
 
-    def plot_dispersion_map(self, cmap = None, units_spacial = 'arcsec'):
+    def plot_dispersion_map(self, cmap = None, units_spacial = 'arcsec', vmin=None, vmax=None):
         if units_spacial == 'arcsec':
             X = self.FoV.to('arcsec').value
         elif units_spacial == 'kpc':
@@ -371,7 +372,8 @@ class DatacubeObj():
             X = self.FoV.to('arcsec').value
         fig = plt.figure(figsize=(12, 10))
         ax = fig.add_subplot(111)
-        p = plt.imshow(self.dispmap, cmap=cmap, extent = [-X/2,X/2,-X/2,X/2])
+        p = plt.imshow(self.dispmap, cmap=cmap, extent = [-X/2,X/2,-X/2,X/2],
+                  vmin=vmin, vmax=vmax)
 
         cbar = fig.colorbar(p, ax=ax)
         cbar.ax.get_yaxis().labelpad = 20

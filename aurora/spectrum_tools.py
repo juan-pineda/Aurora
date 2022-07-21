@@ -327,7 +327,6 @@ def __cube_spatial_convolution_in_parallel_1(run, spectrom, cube):
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     pool = mp.Pool(num_cores, init_worker)
-
     outputs = []
     print('Start parallel convolution in the different spatial scale')
     for scale_index in range(run.nfft):
@@ -343,15 +342,22 @@ def __cube_spatial_convolution_in_parallel_1(run, spectrom, cube):
         result = []
         outputs1 = []
         for i in range(n_ch):
-        #Convolution in the slides of the 3D cube in the scale_index
-                result.append(pool.apply_async(astropy.convolution.convolve_fft, args=(cube[i,:,:,run.nfft-scale_index-1],
+            #Convolution in the slides of the 3D cube in the scale_index
+           # slice_max = np.floor(np.log10(cube[i,:,:,run.nfft-scale_index-1].max()))
+           # slice_min = np.floor(np.log10(cube[i,:,:,run.nfft-scale_index-1][cube[i,:,:,run.nfft-scale_index-1]>0].min()))
+            #contrast = slice_max - slice_min
+            #if (spectrom.slice_cut == 'contrast') and (contrast > 15):
+             #   cube[i,:,:,run.nfft-scale_index-1] = cv.lum_cut_slice(spectrom, cube[i,:,:,run.nfft-scale_index-1])
+            #else:
+             #   print("Nothing to cut in the slice")
+            result.append(pool.apply_async(astropy.convolution.convolve_fft, args=(cube[i,:,:,run.nfft-scale_index-1],
                                                   psf), kwds={'psf_pad' : True, 'fft_pad' : True, 'allow_huge' : True}))                    
         for r in result:                    
-                try:
-                    outputs1.append(r.get())
-                except KeyboardInterrupt:
-                    pool.terminate()
-                    pool.join()
+            try:
+                outputs1.append(r.get())
+            except KeyboardInterrupt:
+                pool.terminate()
+                pool.join()
         
         outputs.append(outputs1)  
 
@@ -452,6 +458,75 @@ def __cube_scale_spatial_convolution(run, spectrom, cube, scale_index):
 #    cube[:, :, :, scale_index] = cv.mode_spatial_convolution(cube[:, :, :, scale_index], psf, run.spatial_convolution)
     print('End scale: ', scale_index)
     return cube_convolve
+
+def flux_cut(spectrom, cube):
+    """
+    Replaces the flux in the data cube by a user-defined maximum, minimum
+    value or limits the contrast to 15 orders of magnitude (or a 
+    user-defined  value) to avoid numerical instabilities in the spatial
+    convolution using FFT.
+    
+    Parameters
+    ----------
+    spectrom : aurora.configuration.SpectromObj
+        Instance of class SpectromObj whose attributes make instrumental
+        properties available. See definitions in configuration.py.
+    cube = ndarray (4D)
+        Contains the fluxes at each pixel for a velocity/spectral
+        channel produced by the gas particles with a smoothing lengths.
+
+    """    
+    # Code flow:
+    # ==========
+    # > Calculate the stddev of the LSF with the resolving power
+    # > Kernel creation with Astropy
+    # > Normalizes the kernel
+
+    if spectrom.flux_cut_model == 'contrast_floor':    
+        cube_max = np.floor(np.log10(cube.max()))
+        cube_min = np.floor(np.log10(cube[cube>0].min()))
+        floor_flux = 10**np.float(cube_max - spectrom.flux_cut[0])
+        print(cube_max, cube_min, floor_flux)
+        print("Contrast cutting a floor: ", floor_flux)
+        logging.info(f"Contrast cut of: {floor_flux}")  
+        cube[cube < floor_flux] = floor_flux
+        print("New min: ", cube.min())
+    elif spectrom.flux_cut_model == 'contrast_threshold':    
+        cube_max = np.floor(np.log10(cube.max()))
+        cube_min = np.floor(np.log10(cube[cube>0].min()))
+        threshold_flux = 10**np.float(cube_min + spectrom.flux_cut[0])
+        print(cube_max, cube_min, threshold_flux)
+        print("Contrast Cutting a threshold: ", threshold_flux)
+        logging.info(f"Contrast cut of: {threshold_flux}")  
+        cube[cube > threshold_flux] = threshold_flux
+        print("New max: ", cube.max())
+    elif spectrom.flux_cut_model == 'contrast_range':    
+        cube_max = np.floor(np.log10(cube.max()))
+        cube_min = np.floor(np.log10(cube[cube>0].min()))
+        #threshold
+        threshold_flux = 10**np.float(-spectrom.flux_cut[0])
+        print(cube_max, cube_min, threshold_flux)
+        print("Contrast Cutting a threshold: ", threshold_flux)
+        logging.info(f"Contrast cut of: {threshold_flux}")  
+        cube[cube > threshold_flux] = threshold_flux
+        #floor        
+        cube_max = np.floor(np.log10(cube.max()))
+        print("New max: ", cube.max())
+        floor_flux = 10**np.float(-spectrom.flux_cut[1])
+        print(cube_max, cube_min, floor_flux)
+        print("Contrast cutting a floor: ", floor_flux)
+        logging.info(f"Contrast cut of: {floor_flux}")  
+        cube[cube < floor_flux] = floor_flux
+        print("New min: ", cube.min())
+    elif spectrom.flux_cut_model == 'flux_max':    
+        print("Cutting at threshold: ", spectrom.flux_cut[0])
+        logging.info(f"Cutting at threshold: {spectrom.luminosity_cut}")  
+        cube[cube > 10**np.float(spectrom.flux_cut[0])] = 10**np.float(spectrom.flux_cut[0])
+    elif spectrom.flux_cut_model == 'flux_min':    
+        print("Cutting at floor value: ", spectrom.flux_cut[0])
+        print("Cutting at floor value: ", 10**np.float(spectrom.flux_cut[0]))
+        logging.info(f"Cutting at floor value: {spectrom.luminosity_cut}")  
+        cube[cube < 10**np.float(spectrom.flux_cut[0])] = 10**np.float(spectrom.flux_cut[0])
 
 
 def __cube_spectral_convolution(run, spectrom, cube, mode = 'analytical'):

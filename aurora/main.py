@@ -94,8 +94,8 @@ def spectrom_mock(ConfigFile):
     
     # > Retain only those gas particles wich lie inside the field of view
     lim = spectrom.fieldofview.to("kpc").value/2.
-    data_gas = snap.filter_array(data_gas,["x"],2*[-lim]+geom.centerx.to("kpc").value,2*[lim]+geom.centerx.to("kpc").value,2*["kpc"])
-    data_gas = snap.filter_array(data_gas,["y"],2*[-lim]+geom.centery.to("kpc").value,2*[lim]+geom.centery.to("kpc").value,2*["kpc"])
+    data_gas = snap.filter_array(data_gas,["x"],[-lim+geom.centerx.to("kpc").value],[lim+geom.centerx.to("kpc").value],2*["kpc"])
+    data_gas = snap.filter_array(data_gas,["y"],[-lim+geom.centery.to("kpc").value],[lim+geom.centery.to("kpc").value],2*["kpc"])
     mask = (data_gas['u']<0)|(data_gas['mass']<0)|(data_gas['rho']<0)|(data_gas['temp']<0)
     data_gas = data_gas[~mask]
 
@@ -104,20 +104,32 @@ def spectrom_mock(ConfigFile):
     # > Determine the smoothing lengths
     # > Increase target resolution to minimize geometrical concerns
     # > Compute the fluxes separately for each AMR scale
+    # > Change the flux in the cube to avoid numerical errors.
     # > Smooth the fluxes from each scale and collapse them
     snap.set_hsml_limits(run, data_gas)
     spectrom.oversample()
     cube = spec.__project_all_chunks(geom, run, spectrom, data_gas)
+    cube_max = np.floor(np.log10(cube.max()))
+    cube_min = np.floor(np.log10(cube[cube>0].min()))
+    contrast = cube_max - cube_min
+    print(cube_max,cube_min)    
+    if (spectrom.flux_cut_model != 'Not') and (contrast > 15):
+        spec.flux_cut(spectrom, cube)
+    else:
+        print("Nothing to cut in the cube")
     if run.ncpu_convolution > 1:
         if run.convolution_parallel_method == 1:
-            cube = spec.__cube_spatial_convolution_in_parallel_1(run, spectrom, cube.copy())
+            cube = spec.__cube_spatial_convolution_in_parallel_1(run, spectrom, cube)
         if run.convolution_parallel_method == 2:
             cube = spec.__cube_spatial_convolution_in_parallel_2(run, spectrom, cube)            
     else:        
         spec.__cube_spatial_convolution(run, spectrom, cube)
         cube = np.sum(cube, axis=3)
     spec.__cube_spectral_convolution(run, spectrom, cube)
-    
+    cube_max = np.floor(np.log10(cube.max()))
+    cube_min = np.floor(np.log10(cube[cube>0].min()))
+    print(cube_max,cube_min)    
+
 
     # Code flow:
     # =====================

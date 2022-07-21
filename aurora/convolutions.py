@@ -101,7 +101,7 @@ def create_lsf(spectrom, size = 20):
         
     Returns
     -------    
-    psf : ndaaray (1D)
+    psf : ndarray (1D)
         Normalized gaussian kernel.
     """
     
@@ -194,8 +194,17 @@ def spatial_convolution_astropy(cube, psf):
     # ==========
     # > The number of channels in the cube is assigned
     # > The convolution is made between the psf and each channel of the cube.
+
     n_ch = cube.shape[0]
     for j in range(n_ch):
+     #   slice_max = np.floor(np.log10(cube[j, :, :].max()))
+    #    slice_min = np.floor(np.log10(cube[j, :, :][cube[j, :, :]>0].min()))
+   #     contrast = slice_max - slice_min
+  #      if (spectrom.slice_cut != 'Not') and (contrast > 15):
+ #           cube[j, :, :] = lum_cut_slice(spectrom, cube[j, :, :])
+#        else:
+#            print("Nothing to cut in the slice")
+
         cube[j, :, :] = astropy.convolution.convolve(cube[j,:,:],psf)
     return cube
 

@@ -312,7 +312,8 @@ class Emitters:
             tokill = (self.dens.to("6.77e-23 g cm**-3").value > thresh)
             self.Halpha_lum[tokill] = self.get_luminosityHalpha_cut(equivalent_luminosity, tokill)  
 
-    def apply_density_cut(self, density_threshold = "Not", equivalent_luminosity = "min"):
+    def apply_density_cut(self, density_threshold = "Not", equivalent_luminosity = "min",
+                         density_floor = np.nan, lum_floor = np.nan):
         """
         Replaces the H-alpha emission for an equivalent luminosity, for certain
         gas particles that exceed the established density threshold.
@@ -341,7 +342,7 @@ class Emitters:
             self.density_cut_model(density_threshold, equivalent_luminosity)
         
         else:
-            self.density_cut(density_threshold, equivalent_luminosity)
+            self.density_cut(density_threshold, equivalent_luminosity, density_floor = np.nan, lum_floor = np.nan)
 
     def get_vel_dispersion(self):
         """

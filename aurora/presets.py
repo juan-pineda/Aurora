@@ -30,9 +30,9 @@ default_values["geometry"] = {
     "theta": [0., unit.deg],
     "phi": [0., unit.deg],
     "barycenter": [False],
-    "centerx": [0.],
-    "centery": [0.],
-    "centerz": [0.],
+    "centerx": [0., unit.kpc],
+    "centery": [0., unit.kpc],
+    "centerz": [0., unit.kpc],
     "reference_frame": [""],
     "gas_minmax_keys": [""],
     "gas_min_values": [""],
@@ -71,6 +71,8 @@ default_values["spectrom"] = {
     "equivalent_luminosity": ["min"],
     "density_floor": [np.nan],
     "lum_floor": [np.nan],
+    "flux_cut_model": ["Not"],
+    "flux_cut": [[15.0]],
     "use_ionized_hydrogen": ["True"]
 }
 

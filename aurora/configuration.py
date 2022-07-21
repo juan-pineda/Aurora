@@ -42,6 +42,7 @@ parameters, like spectral_range in (angstrom).
 import os
 import re
 import sys
+import json
 import logging
 import numpy as np
 import configparser
@@ -99,6 +100,8 @@ def read_var(config_var, section, var, vartype, units=None):
             output = config_var.get(section, var)
         elif vartype == bool:
             output = config_var.getboolean(section, var)
+        elif vartype == list:
+            output = json.loads(config_var.get(section, var))
     except:
         global missing_params
         missing_params.append(var)
@@ -559,6 +562,22 @@ class SpectromObj():
             Floor in lumninosity and Equivalent luminosity that replace
             the H-alpha emission for certain gas particles according with
             the floor value. See more info in emitters.py.
+        flux_cut_model : str
+            Variable that allows to change the flux in the data cube. 
+            See more infoin emitters.py.  
+            Options :
+            *  Not (default): No Flux change.
+            *  contrast_floor: Changes the contrast in the flux by a 
+               defined order of magnitude (15 by default) replacing with 
+               a floor value.
+            *  contrast_threshold: Changes the contrast in the flux by a 
+               defined order of magnitude (15 by default) replacing with
+               a threshold value.
+            *  flux_max : Imposes a maximum value on the flux.
+            *  flux_min : Imposes a minimum value on the flux.
+        flux_cut : float
+            Value in flux that replace the flux in the data cube. See 
+            more info in emitters.py.
         use_ionized_hydrogen : bool
             Determines whether or not to use the ionized hydrogen
             information stored in the simulated particles for luminosity
@@ -633,6 +652,10 @@ class SpectromObj():
             spec_conf, "spectrom", "density_floor", float)
         self.lum_floor = read_var(
             spec_conf, "spectrom", "lum_floor", float)
+        self.flux_cut_model = read_var(
+            spec_conf, "spectrom", "flux_cut_model", str)
+        self.flux_cut = read_var(
+            spec_conf, "spectrom", "flux_cut", list)
         self.use_ionized_hydrogen = read_var(
             spec_conf, "spectrom", "use_ionized_hydrogen", bool)
 
