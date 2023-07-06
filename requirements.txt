@@ -1,7 +1,7 @@
 numpy==1.14.2
 astropy==3.0.1
 Pympler==0.5
-scipy==0.17.0
+scipy==1.10.0
 matplotlib==2.2.0
 pynbody==0.43
 scikit_learn==0.19.1
